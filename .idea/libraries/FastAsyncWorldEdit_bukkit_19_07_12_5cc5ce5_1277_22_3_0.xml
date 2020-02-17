@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="FastAsyncWorldEdit-bukkit-19.07.12-5cc5ce5-1277-22.3.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Downloads/FastAsyncWorldEdit-bukkit-19.07.12-5cc5ce5-1277-22.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/PlaceholderAPI-2.9.2.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/spigot-1.12.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/Downloads/spigot-1.12.jar!/" />
+    </SOURCES>
+  </library>
+</component>
