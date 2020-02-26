@@ -1,0 +1,7 @@
+main: me.gravitinos.bedwars.SpigotBedwars
+name: SoraxusBedwars
+version: 1.0
+author: Gravitinos
+description: Bedwars Plugin by Gravitinos
+softdepend: [PlaceholderAPI]
+commands:
