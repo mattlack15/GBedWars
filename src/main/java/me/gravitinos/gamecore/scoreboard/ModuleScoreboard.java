@@ -1,5 +1,6 @@
 package me.gravitinos.gamecore.scoreboard;
 
+import com.google.common.collect.Lists;
 import me.gravitinos.gamecore.CoreHandler;
 import me.gravitinos.gamecore.handler.GameHandler;
 import me.gravitinos.gamecore.module.GameModule;
@@ -52,6 +53,9 @@ public class ModuleScoreboard extends GameModule {
 
                     objective.setDisplayName(title);
 
+                    ArrayList<String> foundValidElements = new ArrayList<>(); // To store the names of the elements on the scoreboard and to remove the lines on the scoreboard
+                    // that don't have a corresponding element
+
                     int i = 0;
                     for(SBElement element : elements){
                         Team team = board.getTeam(element.getName());
@@ -100,8 +104,26 @@ public class ModuleScoreboard extends GameModule {
                             objective.getScore(element.getName()).setScore(i);
                         }
 
+                        foundValidElements.add(element.getName());
+
                         i++;
                     }
+
+                    Objective finalObjective = objective;
+
+                    Lists.newArrayList(board.getEntries()).forEach(entry -> { //Get rid of lines that aren't supposed to be there
+                        if(finalObjective.getScore(entry).isScoreSet()){
+                            if(!foundValidElements.contains(entry)){
+                                board.resetScores(entry);
+                                if(board.getTeam(entry) != null){
+                                    try {
+                                        board.getTeam(entry).unregister();
+                                    } catch(Exception ignored){
+                                    }
+                                }
+                            }
+                        }
+                    });
                     player.setScoreboard(board);
                 }
             }
