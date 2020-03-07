@@ -51,13 +51,4 @@ public class CoreHandler {
         new MenuManager();
         EventSubscriptions.instance.subscribe(this);
     }
-
-    // When a player leaves the server
-    @EventSubscription
-    private void onLeave(PlayerQuitEvent event){
-        GameQueue.getQueues().forEach((q) -> q.unQueuePlayer(event.getPlayer().getUniqueId()));
-        GameHandler.getGameHandlers().forEach((g) -> g.kickPlayer(event.getPlayer().getUniqueId()));
-        GameHandler.getGameHandlers().forEach((g) -> g.kickSpectator(event.getPlayer().getUniqueId()));
-
-    }
 }

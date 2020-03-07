@@ -4,8 +4,11 @@ import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.util.ActionBar;
+import me.gravitinos.bedwars.gamecore.util.EventSubscription;
+import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
 import me.gravitinos.bedwars.gamecore.util.WeakList;
 import org.bukkit.Bukkit;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -123,6 +126,7 @@ public class GameQueue {
         this.originalTimeSeconds = timeSeconds;
         this.game = game;
         register(this);
+        EventSubscriptions.instance.subscribe(this);
     }
 
     /**
@@ -201,6 +205,11 @@ public class GameQueue {
         ArrayList<UUID> q = Lists.newArrayList(queued);
         CoreHandler.doInMainThread(() -> game.start(q));
         this.queued.clear();
+    }
+
+    @EventSubscription
+    private void onLeave(PlayerQuitEvent event){
+        this.unQueuePlayer(event.getPlayer().getUniqueId());
     }
 
 }

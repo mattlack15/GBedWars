@@ -7,6 +7,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -120,11 +121,21 @@ public class EventSubscriptions implements Listener {
         }
     }
 
+    /**
+     * Register normal object
+     * @param o Object
+     */
     public synchronized void subscribe(Object o) {
         if (!this.subscribedObjects.contains(o)) {
             this.subscribedObjects.add(o);
         }
     }
+
+    /**
+     * Register abstract object
+     * @param o Object
+     * @param clazz Class of the abstract object
+     */
     public synchronized void abstractSubscribe(Object o, Class<?> clazz) {
         if (!this.abstractObjects.containsKey(o)) {
             this.abstractObjects.put(o, clazz);
@@ -156,6 +167,12 @@ public class EventSubscriptions implements Listener {
     public void onFoodLevelChange(FoodLevelChangeEvent e) {callMethods(e);}
     @EventHandler
     public void onItemDespawn(ItemDespawnEvent e) {callMethods(e);}
+    @EventHandler
+    public void onInteractEntity(PlayerInteractEntityEvent e) {callMethods(e);}
+    @EventHandler
+    public void onInteractAtEntity(PlayerInteractAtEntityEvent e) {callMethods(e);}
+    @EventHandler
+    public void onBlockDamage(BlockDamageEvent e) {callMethods(e);}
     @EventHandler
     public void onDropItem(PlayerDropItemEvent e) {callMethods(e);}
     @EventHandler

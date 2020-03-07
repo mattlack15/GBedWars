@@ -2,8 +2,12 @@ package me.gravitinos.bedwars.game.module.generator;
 
 import me.gravitinos.bedwars.gamecore.util.ArmorStandFactory;
 import me.gravitinos.bedwars.gamecore.util.ArmorStandTextHolder;
+import me.gravitinos.bedwars.gamecore.util.EntityStore;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +20,7 @@ public class Generator implements ArmorStandTextHolder {
     private ItemStack drop;
     private double interval;
     private Location location;
-    private ArmorStand stand = null;
+    private EntityStore<ArmorStand> stand = new EntityStore<>(null);
     private Item item = null;
     public Generator(@NotNull Location location, @NotNull String name, @NotNull ItemStack drop, double interval){
         this.name = name;
@@ -74,6 +78,7 @@ public class Generator implements ArmorStandTextHolder {
     public void removeItem(){
         if(this.item != null){
             item.remove();
+            item = null;
         }
     }
 
@@ -81,28 +86,31 @@ public class Generator implements ArmorStandTextHolder {
 
     @Override
     public void removeStand() {
-        if(stand == null){
+        ArmorStand st = stand.getEntity();
+        if(st == null){
             return;
         }
-        stand.remove();
+        st.remove();
     }
 
     @Override
     public void createStand(String text) {
         this.removeStand();
         Location loc = location.clone().add(0.5, 2.2, 0.5);
-        this.stand = ArmorStandFactory.createText(loc, text);
+        this.stand = new EntityStore<>(ArmorStandFactory.createText(loc, text));
     }
 
     @Override
     public ArmorStand getStand() {
-        return this.stand;
+        return this.stand.getEntity();
     }
 
     @Override
     public void setText(String text) {
-        if(this.stand != null){
+        ArmorStand stand = this.stand.getEntity();
+        if(stand != null){
             stand.setCustomName(text);
+            stand.setCustomNameVisible(true);
         }
     }
 }

@@ -7,6 +7,7 @@ import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
 import me.gravitinos.bedwars.gamecore.util.WeakList;
 import org.bukkit.Bukkit;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,9 +16,9 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public abstract class GameHandler {
+import static java.lang.reflect.Modifier.PRIVATE;
 
-    private static WeakList<GameHandler> gameHandlers = new WeakList<>();
+public abstract class GameHandler {
 
     private ArrayList<GameModule> modules = new ArrayList<>();
     private int maxGameLengthSeconds;
@@ -28,7 +29,6 @@ public abstract class GameHandler {
         EventSubscriptions.instance.abstractSubscribe(this, GameHandler.class);
         this.gameName = gameName;
         this.maxGameLengthSeconds = maxGameLengthSeconds;
-        gameHandlers.add(this);
     }
 
     /**
@@ -38,15 +38,6 @@ public abstract class GameHandler {
      */
     public String getGameName() {
         return gameName;
-    }
-
-    /**
-     * Get all existing (constructed) game handlers
-     *
-     * @return List of them
-     */
-    public static WeakList<GameHandler> getGameHandlers() {
-        return gameHandlers;
     }
 
     /**
@@ -188,6 +179,12 @@ public abstract class GameHandler {
      * @return Players
      */
     public abstract ArrayList<UUID> getPlayers();
+
+    @EventSubscription
+    private void onLeave(PlayerQuitEvent event){
+        this.kickPlayer(event.getPlayer().getUniqueId());
+        this.kickSpectator(event.getPlayer().getUniqueId());
+    }
 
     /**
      * Gets the spectators of this game

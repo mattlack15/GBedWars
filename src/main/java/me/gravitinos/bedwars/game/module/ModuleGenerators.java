@@ -1,7 +1,10 @@
 package me.gravitinos.bedwars.game.module;
 
+import me.gravitinos.bedwars.game.BedwarsHandler;
+import me.gravitinos.bedwars.game.module.gameitems.BedwarsItem;
 import me.gravitinos.bedwars.game.module.generator.Generator;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
+import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
@@ -12,16 +15,18 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.UUID;
 
 public class ModuleGenerators extends GameModule {
 
-    private static final double MID_GENERATOR_INTERVAL = 20;
-    private static final double OUTER_GENERATOR_INTERVAL = 40;
+    private static final double MID_GENERATOR_INTERVAL = 60;
+    private static final double OUTER_GENERATOR_INTERVAL = 30;
     private static final double BASE_GENERATOR_IRON_INTERVAL = 1.2;
     private static final double BASE_GENERATOR_GOLD_INTERVAL = 8;
 
@@ -34,10 +39,10 @@ public class ModuleGenerators extends GameModule {
 
         //Mid and outer generators
         for (Location outerGen : outerGens) {
-            generators.add(new Generator(outerGen, ChatColor.AQUA + "Diamond Generator", new ItemBuilder(Material.DIAMOND, 1).addLore(ChatColor.GRAY + "Use this in the shop for advantages").build(), MID_GENERATOR_INTERVAL));
+            generators.add(new Generator(outerGen, ChatColor.AQUA + "Diamond Generator", Objects.requireNonNull(a(BedwarsItem.RESOURCE_DIAMOND.toString())), OUTER_GENERATOR_INTERVAL));
         }
         for (Location midGen : midGens) {
-            generators.add(new Generator(midGen, ChatColor.GREEN + "Emerald Generator", new ItemBuilder(Material.EMERALD, 1).addLore(ChatColor.GRAY + "Use this in the shop for gear and items").build(), OUTER_GENERATOR_INTERVAL));
+            generators.add(new Generator(midGen, ChatColor.GREEN + "Emerald Generator", Objects.requireNonNull(a(BedwarsItem.RESOURCE_EMERALD.toString())), MID_GENERATOR_INTERVAL));
         }
 
         //Stand setup
@@ -48,8 +53,8 @@ public class ModuleGenerators extends GameModule {
 
         //Base generators
         for (Location baseGen : baseGens) {
-            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Iron", new ItemBuilder(Material.IRON_INGOT, 1).build(), BASE_GENERATOR_IRON_INTERVAL));
-            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Gold", new ItemBuilder(Material.GOLD_INGOT, 1).build(), BASE_GENERATOR_GOLD_INTERVAL));
+            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Iron", Objects.requireNonNull(a(BedwarsItem.RESOURCE_IRON.toString())), BASE_GENERATOR_IRON_INTERVAL));
+            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Gold", Objects.requireNonNull(a(BedwarsItem.RESOURCE_GOLD.toString())), BASE_GENERATOR_GOLD_INTERVAL));
         }
 
         //Task interval of 2 ticks or 0.1s
@@ -75,6 +80,11 @@ public class ModuleGenerators extends GameModule {
                 }
             }
         }.runTaskTimer(CoreHandler.main, 0, 2);
+    }
+
+    private ItemStack a(String item){
+        GameItemHandler gameItemHandler = ((BedwarsHandler)this.getGameHandler()).getGameItemsModule().getGameItem(item);
+        return gameItemHandler != null ? gameItemHandler.getItem(1) : null;
     }
 
     public ArrayList<Generator> getGenerators(){

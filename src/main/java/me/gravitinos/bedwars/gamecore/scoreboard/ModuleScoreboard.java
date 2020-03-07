@@ -52,6 +52,8 @@ public class ModuleScoreboard extends GameModule {
                     if (objective == null) {
                         board.clearSlot(DisplaySlot.SIDEBAR);
                         objective = board.registerNewObjective("sidebar", "dummy");
+                    }
+                    if(objective.getDisplaySlot() != DisplaySlot.SIDEBAR){
                         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
                     }
 

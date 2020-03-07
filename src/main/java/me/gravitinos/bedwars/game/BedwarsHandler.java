@@ -3,24 +3,22 @@ package me.gravitinos.bedwars.game;
 import com.boydti.fawe.FaweAPI;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.bukkit.BukkitUtil;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import me.gravitinos.bedwars.game.module.ModuleBorder;
 import me.gravitinos.bedwars.game.module.ModuleGenerators;
-import me.gravitinos.bedwars.game.module.ModulePlayerBlockHandler;
+import me.gravitinos.bedwars.game.module.ModuleBlockHandler;
 import me.gravitinos.bedwars.game.module.ModulePlayerSetup;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
+import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
 import me.gravitinos.bedwars.gamecore.gameitem.ModuleGameItems;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
-import me.gravitinos.bedwars.gamecore.map.MapHandler;
 import me.gravitinos.bedwars.gamecore.scoreboard.ModuleScoreboard;
 import me.gravitinos.bedwars.gamecore.scoreboard.SBElement;
 import me.gravitinos.bedwars.gamecore.scoreboard.SBScope;
 import me.gravitinos.bedwars.gamecore.team.ModuleTeamManager;
 import me.gravitinos.bedwars.gamecore.util.ActionBar;
 import me.gravitinos.bedwars.gamecore.util.Saving.SavedPlayerState;
-import me.gravitinos.bedwars.gamecore.util.TextUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -54,6 +52,7 @@ public class BedwarsHandler extends GameHandler {
         this.addModule(new ModuleGameItems(this));
         this.addModule(new ModuleTeamManager(this));
         this.addModule(new ModuleScoreboard(this, ChatColor.RED + "BedWars", SBScope.EVERYONE));
+        this.getModule(ModuleScoreboard.class).addElement(new SBElement("Hey"));
         this.addModule(new ModuleGenerators(this, pointTracker.getMidGens(), pointTracker.getOuterGens(), pointTracker.getBaseGens()));
         this.addModule(new ModulePlayerSetup(this));
 
@@ -63,8 +62,12 @@ public class BedwarsHandler extends GameHandler {
 
         this.mapRegion = new CuboidRegion(FaweAPI.getWorld(b1.getWorld().getName()), new com.sk89q.worldedit.Vector(b1.getX(), b1.getY(), b1.getZ()), new com.sk89q.worldedit.Vector(b2.getX(), b2.getY(), b2.getZ()));
 
-        this.addModule(new ModulePlayerBlockHandler(this, mapRegion));
+        this.addModule(new ModuleBlockHandler(this, mapRegion));
         this.addModule(new ModuleBorder(this, mapRegion));
+    }
+
+    public GameItemHandler getGameItem(String name){
+        return this.getGameItemsModule().getGameItem(name);
     }
 
     public BedwarsMapPointTracker getPointTracker() {
@@ -82,6 +85,8 @@ public class BedwarsHandler extends GameHandler {
     public ModuleTeamManager getTeamManagerModule(){
         return this.getModule(ModuleTeamManager.class);
     }
+
+    public ModuleBlockHandler getBlockHandlerModule() { return this.getModule(ModuleBlockHandler.class); }
 
     @Override
     public CompletableFuture<Boolean> start(ArrayList<UUID> players) {
@@ -186,6 +191,7 @@ public class BedwarsHandler extends GameHandler {
         this.getModule(ModuleGenerators.class).disable();
         this.getGameItemsModule().disableAllGameItems();
         this.getModule(ModuleScoreboard.class).setEnabled(false);
+        this.getModule(ModuleBlockHandler.class).revertBlocks();
 
         this.internalItemCleanup();
 
@@ -254,7 +260,6 @@ public class BedwarsHandler extends GameHandler {
 
     @Override
     public void kickPlayer(UUID player) {
-        Bukkit.broadcastMessage("Kicking " + player);
         this.removePlayingPlayer(player, true);
     }
 
