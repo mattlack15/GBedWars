@@ -9,12 +9,24 @@ public abstract class SimpleGameItemHandler extends GameItemHandler {
     private String levelIdentifier = null;
 
 
+    /**
+     * Please use this constructor of your game item incorporates levels/leveling
+     * @param module
+     * @param name
+     * @param itemIdentifier
+     * @param levelIdentifier
+     */
     public SimpleGameItemHandler(@NotNull ModuleGameItems module, @NotNull String name, @NotNull String itemIdentifier, @NotNull String levelIdentifier){
         super(module, name);
         this.itemIdentifier = itemIdentifier;
         this.levelIdentifier = levelIdentifier;
     }
 
+    /**
+     * Please use this constructor if your game item does not incorporate levels/leveling
+     * @param module
+     * @param name
+     */
     public SimpleGameItemHandler(@NotNull ModuleGameItems module, @NotNull String name) {
         super(module, name);
     }

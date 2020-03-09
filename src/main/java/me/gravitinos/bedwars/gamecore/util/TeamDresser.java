@@ -10,6 +10,7 @@ public final class TeamDresser {
     private static ItemStack generateItem(Material mat, int color) {
         return new ItemBuilder(mat, 1)
                 .setUnbreakable(true)
+                .setLeatherColour(color)
                 .build(); //TODO
     }
 
@@ -36,6 +37,23 @@ public final class TeamDresser {
         return inventory;
 
     }
+
+    public static SavedInventory dressPlayer(Player p, int colour){
+        SavedInventory inventory = new SavedInventory(p.getInventory().getContents(), p.getInventory().getArmorContents());
+
+        ItemStack[] armor = new ItemStack[4];
+
+        armor[0] = generateItem(Material.LEATHER_BOOTS, colour);
+        armor[1] = generateItem(Material.LEATHER_LEGGINGS, colour);
+        armor[2] = generateItem(Material.LEATHER_CHESTPLATE, colour);
+        armor[3] = generateItem(Material.LEATHER_HELMET, colour);
+        p.getInventory().setArmorContents(armor);
+
+        return inventory;
+
+    }
+
+
 
     /**
      * Set the color of a leather armor piece

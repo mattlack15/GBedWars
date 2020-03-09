@@ -109,6 +109,7 @@ public class GameQueue {
             try {
                 if (!isTaskRunning) {
                     task.runTaskTimer(CoreHandler.main, 0, Math.round(20 * TASK_INCREMENT));
+                    isTaskRunning = true;
                 }
             } catch(Exception e){
                 Bukkit.broadcastMessage("Problem in GameQueue! Contact Dev");

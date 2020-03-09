@@ -119,6 +119,31 @@ public class EventSubscriptions implements Listener {
             }
 
         }
+
+        for (Object o : this.abstractObjects.keySet()) {
+            Class<?> c = this.abstractObjects.get(o);
+            ArrayList<Method> methodsToCheck = Lists.newArrayList(c.getDeclaredMethods());
+            for(Method meths : c.getMethods()){
+                if(!methodsToCheck.contains(meths)){
+                    methodsToCheck.add(meths);
+                }
+            }
+            for (Method methods : methodsToCheck) {
+                if (methods.isAnnotationPresent(OnDisable.class)) {
+                    if (methods.getParameterCount() == 0) {
+                        try {
+                            methods.setAccessible(true);
+                            methods.invoke(o);
+                        } catch (IllegalAccessException ex) {
+                            ex.printStackTrace();
+                        } catch (InvocationTargetException ex) {
+                            ex.getTargetException().printStackTrace();
+                        }
+                    }
+                }
+            }
+
+        }
     }
 
     /**
@@ -185,6 +210,10 @@ public class EventSubscriptions implements Listener {
     public void onPickup(EntityPickupItemEvent e) { callMethods(e); }
     @EventHandler
     public void onJoin(PlayerJoinEvent e){ callMethods(e); }
+    @EventHandler
+    public void onProjectileLaunch(ProjectileLaunchEvent e) {callMethods(e);}
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent e){callMethods(e);}
     @EventHandler
     public void onQuit(PlayerQuitEvent e){ callMethods(e); }
     @EventHandler

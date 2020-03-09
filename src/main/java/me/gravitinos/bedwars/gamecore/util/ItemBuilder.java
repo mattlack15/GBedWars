@@ -2,9 +2,12 @@ package me.gravitinos.bedwars.gamecore.util;
 
 import com.google.common.collect.Lists;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
@@ -94,6 +97,24 @@ public class ItemBuilder {
 		item.setItemMeta(meta);
 		return this;
 	}
+
+	public ItemBuilder addEnchantment(Enchantment enchantment, int level){
+		this.item.addUnsafeEnchantment(enchantment, level);
+		return this;
+	}
+
+	public ItemBuilder setLeatherColour(int color){
+		if(!this.item.hasItemMeta() || !(this.item.getItemMeta() instanceof LeatherArmorMeta)){
+			return this;
+		}
+
+		LeatherArmorMeta meta = (LeatherArmorMeta) item.getItemMeta();
+
+		meta.setColor(Color.fromRGB(color));
+		this.item.setItemMeta(meta);
+		return this;
+	}
+
 	public ItemBuilder setLore(int i, String s){
 		ItemMeta meta = item.getItemMeta();
 		List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();

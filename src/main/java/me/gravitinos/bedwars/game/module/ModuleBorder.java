@@ -29,7 +29,7 @@ public class ModuleBorder extends GameModule {
                 for(UUID players : getGameHandler().getPlayers()){
                     Player player = Bukkit.getPlayer(players);
                     if(!region.contains(new Vector(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ()))){
-                        ((BedwarsHandler)getGameHandler()).killPlayer(players, ChatColor.RED + "Border");
+                        ((BedwarsHandler)getGameHandler()).killPlayer(players, "Border");
                     }
                 }
                 for(UUID spectators : getGameHandler().getSpectators()){

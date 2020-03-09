@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 
 public enum BedwarsTeam {
-    RED("red", Color.RED.getRGB(), () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsRED()),
-    BLUE("blue", Color.BLUE.getRGB(), () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsBLUE()),
-    YELLOW("yellow", Color.YELLOW.getRGB(), () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsYELLOW()),
-    GREEN("green", Color.GREEN.getRGB(), () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsGREEN());
+    RED("red", 0xFF0000, () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsRED()),
+    BLUE("blue", 0x0000FF, () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsBLUE()),
+    YELLOW("yellow", 0xFADD00, () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsYELLOW()),
+    GREEN("green", 0x00FF00, () -> SpigotBedwars.bedwarsHandler.getPointTracker().getSpawnpointsGREEN());
 
     private final String str;
     private final int colour;
@@ -37,6 +37,9 @@ public enum BedwarsTeam {
     }
 
     public static BedwarsTeam getTeam(String name){
+        if(name == null){
+            return null;
+        }
         for(BedwarsTeam teams : values()){
             if(name.equals(teams.toString()) || name.equals(teams.name())){
                 return teams;

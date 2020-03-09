@@ -65,7 +65,7 @@ public class ModuleScoreboard extends GameModule {
                     int i = elements.size();
                     for(SBElement element : elements){
                         Team team = board.getTeam(element.getName());
-                        String text = element.getText();
+                        String text = ChatColor.translateAlternateColorCodes('&', element.getText());
 
                         String prefix;
                         String suffix = "";

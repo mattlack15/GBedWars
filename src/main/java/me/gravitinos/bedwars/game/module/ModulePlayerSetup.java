@@ -2,7 +2,9 @@ package me.gravitinos.bedwars.game.module;
 
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.BedwarsTeam;
+import me.gravitinos.bedwars.game.module.gameitems.BedwarsItem;
 import me.gravitinos.bedwars.game.module.playersetup.Kit;
+import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.HideUtil;
@@ -15,6 +17,7 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,10 +47,11 @@ public class ModulePlayerSetup extends GameModule {
         player.setSaturation(20);
         player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
         player.teleport(spawn, PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
-
-        TeamDresser.clearAndDressPlayer(player, team.getColour());
+        player.getEnderChest().clear();
 
         player.getInventory().setContents(kit.getContents());
+
+        TeamDresser.dressPlayer(player, team.getColour());
         HideUtil.unHidePlayer(player);
 
         return state;
@@ -62,6 +66,18 @@ public class ModulePlayerSetup extends GameModule {
     public SavedPlayerState killPlayer(Player player, boolean elimination) {
         SavedPlayerState state = new SavedPlayerState(player);
 
+        BedwarsHandler bedwarsHandler = (BedwarsHandler)getGameHandler();
+        for(ItemStack contents : player.getInventory().getStorageContents()) {
+            if(contents == null){
+                continue;
+            }
+            for (GameItemHandler gameItemHandlers : bedwarsHandler.getGameItemsModule().getGameItems()) {
+                if(gameItemHandlers.isMatch(contents) && gameItemHandlers.getName().startsWith("RESOURCE_")){
+                    player.getWorld().dropItemNaturally(player.getLocation(), contents);
+                }
+            }
+        }
+
         if (!elimination) {
             HideUtil.hidePlayer(player);
             
@@ -69,13 +85,15 @@ public class ModulePlayerSetup extends GameModule {
             
             com.sk89q.worldedit.Vector teleportPoint = handler.getMapRegion().getCenter().setY(handler.getPointTracker().getBedBLUE().getY() + 20);
             try {
-                player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(handler.getMapRegion().getWorld()).getName()), teleportPoint.getX(), teleportPoint.getY(), teleportPoint.getZ()), PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
+                player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(handler.getMapRegion().getWorld()).getName()), teleportPoint.getX(), teleportPoint.getY(), teleportPoint.getZ()), PlayerTeleportEvent.TeleportCause.COMMAND);
             } catch (Exception e){
                 e.printStackTrace();
             }
-        } else {
+
             player.setFoodLevel(20);
+            player.getInventory().clear();
             player.setSaturation(20);
+            player.setGameMode(GameMode.ADVENTURE);
             player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
             player.setVelocity(player.getVelocity().add(new Vector(0, 1, 0)));
         }

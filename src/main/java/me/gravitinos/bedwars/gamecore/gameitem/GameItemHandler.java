@@ -65,10 +65,16 @@ public abstract class GameItemHandler {
 
     protected boolean basicNoLevelIsMatch(@NotNull ItemStack stack){
         ItemStack stack2 = this.getItem(1);
+        if(stack == null){
+            return stack2 == null;
+        }
         return stack.isSimilar(stack2);
     }
 
     protected boolean basicIsMatch(@NotNull ItemStack stack, String identifier){
+        if(stack == null){
+            return false;
+        }
         ItemMeta meta = stack.getItemMeta();
         if(meta == null || !meta.hasDisplayName()){
             return false;
