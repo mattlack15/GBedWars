@@ -13,12 +13,17 @@ import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.material.Bed;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,10 +41,25 @@ public class ModuleGameEnvironment extends GameModule {
         super(gameHandler, "PLAYER_BLOCK_HANDLER");
         this.region = region;
 
-        //Beds
+        //Place Beds
         for(int i = 0; i < BedwarsTeam.values().length; i++){
             Location l = ((BedwarsHandler)getGameHandler()).getPointTracker().getBed(BedwarsTeam.values()[i]);
-            l.getBlock().setType(Material.GLASS);
+            Vector dirToMid = ((BedwarsHandler)getGameHandler()).getMapRegion().getCenter().setY(l.getY()).subtract(new Vector(l.getX(), l.getY(), l.getZ())).normalize();
+            Location b = new Location(l.getWorld(), l.getX() + dirToMid.getX() + 0.5, l.getY() + dirToMid.getY() + 0.5, l.getZ() + dirToMid.getZ() + 0.5);
+            BlockState bs1 = l.getBlock().getState();
+            bs1.setType(Material.BED_BLOCK);
+            Bed bed = (Bed) bs1.getData();
+            bed.setFacingDirection(l.getBlock().getFace(b.getBlock()));
+            bs1.setData(bed);
+            bs1.update(true, false);
+
+            BlockState bs = b.getBlock().getState();
+            bs.setType(Material.BED_BLOCK);
+            Bed bed2 = (Bed) bs.getData();
+            bed2.setHeadOfBed(true);
+            bed2.setFacingDirection(l.getBlock().getFace(b.getBlock()));
+            bs.update(true, false);
+
         }
     }
 
@@ -80,6 +100,16 @@ public class ModuleGameEnvironment extends GameModule {
     }
 
     @EventSubscription
+    private void onInventoryClick(InventoryClickEvent event){
+        if(getGameHandler().isPlaying(event.getWhoClicked().getUniqueId())){
+            if(event.getSlotType() == InventoryType.SlotType.ARMOR){
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+                                  @EventSubscription
     private void onBreak(BlockBreakEvent event) {
         if (getGameHandler().isPlaying(event.getPlayer().getUniqueId())) {
             Location loc = event.getBlock().getLocation();
@@ -90,10 +120,18 @@ public class ModuleGameEnvironment extends GameModule {
                     return;
                 }
 
+
+                Location blockToLookFor = event.getBlock().getLocation();
+                if(event.getBlock().getState().getData() instanceof Bed){
+                    Bed bed = (Bed)event.getBlock().getState().getData();
+                    if(bed.isHeadOfBed()){
+                        blockToLookFor = event.getBlock().getRelative(bed.getFacing().getOppositeFace()).getLocation();
+                    }
+                }
                 //Check for beds
                 for(int i = 0; i < BedwarsTeam.values().length; i++){
                     Location l = ((BedwarsHandler)getGameHandler()).getPointTracker().getBed(BedwarsTeam.values()[i]);
-                    if(event.getBlock().getLocation().equals(l)){
+                    if(blockToLookFor.equals(l)){
                         BedwarsTeam team = BedwarsTeam.getTeam(((BedwarsHandler)getGameHandler()).getTeamManagerModule().getTeam(event.getPlayer().getUniqueId()));
 
                         if(team == BedwarsTeam.values()[i]){

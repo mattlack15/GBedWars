@@ -1,5 +1,7 @@
 package me.gravitinos.bedwars.game.module.shop;
 
+import me.gravitinos.bedwars.game.BedwarsHandler;
+import me.gravitinos.bedwars.game.info.PermanentArmorType;
 import me.gravitinos.bedwars.game.module.gameitems.BedwarsItem;
 import me.gravitinos.bedwars.gamecore.gameitem.ModuleGameItems;
 import me.gravitinos.bedwars.gamecore.util.ItemBuilder;
@@ -26,17 +28,16 @@ public class ShopInventoryUtil {
                 new ShopItem(getItem(BedwarsItem.RESOURCE_GOLD, gameItems, 2), new ItemBuilder(Material.IRON_SWORD, 1).build()));
 
         inventory.addShopItem(ShopInventoryUtil.SECTION_ARMOUR,
-                new ShopItem(getItem(BedwarsItem.RESOURCE_IRON, gameItems, 15), new ItemBuilder(Material.IRON_BOOTS, 1).build(), (pl) -> pl.getInventory().setBoots(new ItemBuilder(Material.IRON_BOOTS, 1).build()), true));
+                new ShopItem(getItem(BedwarsItem.RESOURCE_GOLD, gameItems, 6), new ItemBuilder(Material.IRON_CHESTPLATE, 1).setName("&cPermanent &fIron Armor").build(), (pl) -> {
+                    pl.getInventory().setLeggings(PermanentArmorType.IRON.getLeggings()); //Btw pl is pL not pONE
+                    ((BedwarsHandler)gameItems.getGameHandler()).getPlayerInfo(pl.getUniqueId()).setPermanentArmorType(PermanentArmorType.IRON);
+                }, true));
 
         inventory.addShopItem(ShopInventoryUtil.SECTION_ARMOUR,
-                new ShopItem(getItem(BedwarsItem.RESOURCE_IRON, gameItems, 30), new ItemBuilder(Material.IRON_LEGGINGS, 1).build(), (pl) -> pl.getInventory().setLeggings(new ItemBuilder(Material.IRON_LEGGINGS, 1).build()), true));
-
-        inventory.addShopItem(ShopInventoryUtil.SECTION_ARMOUR,
-                new ShopItem(getItem(BedwarsItem.RESOURCE_IRON, gameItems, 30), new ItemBuilder(Material.IRON_CHESTPLATE, 1).build(), (pl) -> pl.getInventory().setChestplate(new ItemBuilder(Material.IRON_CHESTPLATE, 1).build()), true));
-
-        inventory.addShopItem(ShopInventoryUtil.SECTION_ARMOUR,
-                new ShopItem(getItem(BedwarsItem.RESOURCE_IRON, gameItems, 15), new ItemBuilder(Material.IRON_HELMET, 1).build(), (pl) -> pl.getInventory().setHelmet(new ItemBuilder(Material.IRON_HELMET, 1).build()), true));
-
+                new ShopItem(getItem(BedwarsItem.RESOURCE_EMERALD, gameItems, 4), new ItemBuilder(Material.DIAMOND_CHESTPLATE, 1).setName("&cPermanent &bDiamond Armor").build(), (pl) -> {
+                    pl.getInventory().setLeggings(PermanentArmorType.DIAMOND.getLeggings()); //Btw pl is pL not pONE
+                    ((BedwarsHandler)gameItems.getGameHandler()).getPlayerInfo(pl.getUniqueId()).setPermanentArmorType(PermanentArmorType.DIAMOND);
+                }, true));
 
         inventory.addShopItem(ShopInventoryUtil.SECTION_BLOCKS,
                 new ShopItem(getItem(BedwarsItem.RESOURCE_GOLD, gameItems, 3), new ItemBuilder(Material.ENDER_STONE, 4).build()));

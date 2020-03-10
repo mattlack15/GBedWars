@@ -4,6 +4,8 @@ import com.boydti.fawe.FaweAPI;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import me.gravitinos.bedwars.game.info.BWPlayerInfo;
+import me.gravitinos.bedwars.game.info.BWTeamInfo;
 import me.gravitinos.bedwars.game.module.*;
 import me.gravitinos.bedwars.game.module.gameitems.*;
 import me.gravitinos.bedwars.game.module.shop.PlayerDependantShop;
@@ -34,14 +36,17 @@ import java.util.concurrent.CompletableFuture;
 
 public class BedwarsHandler extends GameHandler {
 
-    private Map<UUID, SavedPlayerState> playerStates = new HashMap<>();
+    private ArrayList<BWTeamInfo> teamInfo = new ArrayList<>();
+    private ArrayList<BWPlayerInfo> playerInfo = new ArrayList<>();
 
-    private ArrayList<UUID> respawning = new ArrayList<>();
+    //private Map<UUID, SavedPlayerState> playerStates = new HashMap<>();
+
+    //private ArrayList<UUID> respawning = new ArrayList<>();
     private ArrayList<UUID> spectating = new ArrayList<>();
 
     private static final double RESPAWN_TIME_SECONDS = 6;
 
-    private ArrayList<BedwarsTeam> existingBeds = new ArrayList<>();
+    //private ArrayList<BedwarsTeam> existingBeds = new ArrayList<>();
 
     private boolean running = false;
     private BedwarsMapPointTracker pointTracker;
@@ -53,6 +58,11 @@ public class BedwarsHandler extends GameHandler {
         new BedwarsMapDataHandler(map);
         this.pointTracker = new BedwarsMapPointTracker(BedwarsMapDataHandler.instance);
 
+
+        //--- Team Info Setup ---
+        for(BedwarsTeam teams : BedwarsTeam.values()){
+            teamInfo.add(new BWTeamInfo(this, teams));
+        }
 
         //--- Game Item Setup ---
         this.addModule(new ModuleGameItems(this));
@@ -73,13 +83,13 @@ public class BedwarsHandler extends GameHandler {
         this.getModule(ModuleScoreboard.class).addElement(new SBElement(""));
 
         this.getModule(ModuleScoreboard.class).addElement(new SBElement("")
-                .setTextGetter(() -> "&b&lBlue " + (existingBeds.contains(BedwarsTeam.BLUE) ? "&a✔" : "&c✘")));
+                .setTextGetter(() -> "&b&lBlue " + (!getTeamInfo(BedwarsTeam.BLUE).isBedDestroyed() ? "&a✔" : "&c✘")));
         this.getModule(ModuleScoreboard.class).addElement(new SBElement("")
-                .setTextGetter(() -> "&c&lRed " + (existingBeds.contains(BedwarsTeam.RED) ? "&a✔" : "&c✘")));
+                .setTextGetter(() -> "&c&lRed " + (!getTeamInfo(BedwarsTeam.RED).isBedDestroyed() ? "&a✔" : "&c✘")));
         this.getModule(ModuleScoreboard.class).addElement(new SBElement("")
-                .setTextGetter(() -> "&a&lGreen " + (existingBeds.contains(BedwarsTeam.GREEN) ? "&a✔" : "&c✘")));
+                .setTextGetter(() -> "&a&lGreen " + (!getTeamInfo(BedwarsTeam.GREEN).isBedDestroyed() ? "&a✔" : "&c✘")));
         this.getModule(ModuleScoreboard.class).addElement(new SBElement("")
-                .setTextGetter(() -> "&e&lYellow " + (existingBeds.contains(BedwarsTeam.YELLOW) ? "&a✔" : "&c✘")));
+                .setTextGetter(() -> "&e&lYellow " + (!getTeamInfo(BedwarsTeam.YELLOW).isBedDestroyed() ? "&a✔" : "&c✘")));
 
         this.addModule(new ModuleGenerators(this, pointTracker.getMidGens(), pointTracker.getOuterGens(), pointTracker.getBaseGens()));
         this.addModule(new ModulePlayerSetup(this));
@@ -101,6 +111,24 @@ public class BedwarsHandler extends GameHandler {
 
         this.addModule(new ModuleGameEnvironment(this, mapRegion));
         this.addModule(new ModuleBorder(this, mapRegion));
+    }
+
+    public BWTeamInfo getTeamInfo(BedwarsTeam team){
+        for(BWTeamInfo infos : teamInfo){
+            if(infos.getTeam().equals(team)){
+                return infos;
+            }
+        }
+        return null;
+    }
+
+    public BWPlayerInfo getPlayerInfo(UUID player){
+        for(BWPlayerInfo infos : playerInfo){
+            if(infos.getUuid().equals(player)){
+                return infos;
+            }
+        }
+        return null;
     }
 
     public GameItemHandler getGameItem(String name) {
@@ -134,87 +162,91 @@ public class BedwarsHandler extends GameHandler {
 
             this.running = true;
 
-            this.existingBeds.addAll(Lists.newArrayList(BedwarsTeam.values())); //Add all the teams' beds to existing beds
-
             //Startup
-            this.getModule(ModuleGenerators.class).enable();
-            this.getModule(ModuleScoreboard.class).setEnabled(true);
-            this.getGameItemsModule().enableAllGameItems();
+            try {
+                this.getModule(ModuleGenerators.class).enable();
+                this.getModule(ModuleScoreboard.class).setEnabled(true);
+                this.getGameItemsModule().enableAllGameItems();
 
-            this.getTeamManagerModule().clear();
-            this.getTeamManagerModule().insert(players, BedwarsTeam.BLUE.toString(), BedwarsTeam.GREEN.toString(), BedwarsTeam.RED.toString(), BedwarsTeam.YELLOW.toString());
+                this.getTeamManagerModule().clear();
+                this.getTeamManagerModule().insert(players, BedwarsTeam.BLUE.toString(), BedwarsTeam.GREEN.toString(), BedwarsTeam.RED.toString(), BedwarsTeam.YELLOW.toString());
 
-            ModulePlayerSetup playerSetup = this.getModule(ModulePlayerSetup.class);
+                ModulePlayerSetup playerSetup = this.getModule(ModulePlayerSetup.class);
 
-            ArrayList<Location> spawnpointsBLUE = this.pointTracker.getSpawnpointsBLUE();
-            ArrayList<Location> spawnpointsRED = this.pointTracker.getSpawnpointsRED();
-            ArrayList<Location> spawnpointsGREEN = this.pointTracker.getSpawnpointsGREEN();
-            ArrayList<Location> spawnpointsYELLOW = this.pointTracker.getSpawnpointsYELLOW();
+                ArrayList<Location> spawnpointsBLUE = this.pointTracker.getSpawnpointsBLUE();
+                ArrayList<Location> spawnpointsRED = this.pointTracker.getSpawnpointsRED();
+                ArrayList<Location> spawnpointsGREEN = this.pointTracker.getSpawnpointsGREEN();
+                ArrayList<Location> spawnpointsYELLOW = this.pointTracker.getSpawnpointsYELLOW();
 
-            if (spawnpointsBLUE.size() == 0) {
-                this.stop("FATAL ERROR: Blue has no spawnpoints marked!", GameStopReason.GAME_ERROR);
-                future.complete(false);
-                return;
-            }
-            if (spawnpointsRED.size() == 0) {
-                this.stop("FATAL ERROR: Red has no spawnpoints marked!", GameStopReason.GAME_ERROR);
-                future.complete(false);
-                return;
-            }
-            if (spawnpointsGREEN.size() == 0) {
-                this.stop("FATAL ERROR: Green has no spawnpoints marked!", GameStopReason.GAME_ERROR);
-                future.complete(false);
-                return;
-            }
-            if (spawnpointsYELLOW.size() == 0) {
-                this.stop("FATAL ERROR: Yellow has no spawnpoints marked!", GameStopReason.GAME_ERROR);
-                future.complete(false);
-                return;
-            }
-
-            Collections.shuffle(spawnpointsBLUE);
-            Collections.shuffle(spawnpointsYELLOW);
-            Collections.shuffle(spawnpointsGREEN);
-            Collections.shuffle(spawnpointsRED);
-
-            int ib = 0;
-            int ir = 0;
-            int ig = 0;
-            int iy = 0;
-            for (UUID uuid : this.getTeamManagerModule().getPlayers()) {
-                Player player = Bukkit.getPlayer(uuid);
-
-                if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.BLUE.toString())) {
-                    if (ib >= spawnpointsBLUE.size()) {
-                        ib = 0;
-                    }
-                    this.playerStates.put(uuid, playerSetup.spawnPlayer(player, spawnpointsBLUE.get(ib), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.BLUE));
-                    ib++;
+                if (spawnpointsBLUE.size() == 0) {
+                    this.stop("FATAL ERROR: Blue has no spawnpoints marked!", GameStopReason.GAME_ERROR);
+                    future.complete(false);
+                    return;
+                }
+                if (spawnpointsRED.size() == 0) {
+                    this.stop("FATAL ERROR: Red has no spawnpoints marked!", GameStopReason.GAME_ERROR);
+                    future.complete(false);
+                    return;
+                }
+                if (spawnpointsGREEN.size() == 0) {
+                    this.stop("FATAL ERROR: Green has no spawnpoints marked!", GameStopReason.GAME_ERROR);
+                    future.complete(false);
+                    return;
+                }
+                if (spawnpointsYELLOW.size() == 0) {
+                    this.stop("FATAL ERROR: Yellow has no spawnpoints marked!", GameStopReason.GAME_ERROR);
+                    future.complete(false);
+                    return;
                 }
 
-                if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.RED.toString())) {
-                    if (ir >= spawnpointsRED.size()) {
-                        ir = 0;
-                    }
-                    this.playerStates.put(uuid, playerSetup.spawnPlayer(player, spawnpointsRED.get(ir), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.RED));
-                    ir++;
-                }
+                Collections.shuffle(spawnpointsBLUE);
+                Collections.shuffle(spawnpointsYELLOW);
+                Collections.shuffle(spawnpointsGREEN);
+                Collections.shuffle(spawnpointsRED);
 
-                if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.YELLOW.toString())) {
-                    if (iy >= spawnpointsYELLOW.size()) {
-                        iy = 0;
-                    }
-                    this.playerStates.put(uuid, playerSetup.spawnPlayer(player, spawnpointsYELLOW.get(iy), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.YELLOW));
-                    iy++;
-                }
+                int ib = 0;
+                int ir = 0;
+                int ig = 0;
+                int iy = 0;
+                for (UUID uuid : this.getTeamManagerModule().getPlayers()) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    this.playerInfo.add(new BWPlayerInfo(this, uuid));
 
-                if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.GREEN.toString())) {
-                    if (ig >= spawnpointsGREEN.size()) {
-                        ig = 0;
+                    if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.BLUE.toString())) {
+                        if (ib >= spawnpointsBLUE.size()) {
+                            ib = 0;
+                        }
+                        this.getPlayerInfo(uuid).setSavedPlayerState(playerSetup.spawnPlayer(player, spawnpointsBLUE.get(ib), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.BLUE));
+                        ib++;
                     }
-                    this.playerStates.put(uuid, playerSetup.spawnPlayer(player, spawnpointsGREEN.get(ig), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.GREEN));
-                    ig++;
+
+                    if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.RED.toString())) {
+                        if (ir >= spawnpointsRED.size()) {
+                            ir = 0;
+                        }
+                        this.getPlayerInfo(uuid).setSavedPlayerState(playerSetup.spawnPlayer(player, spawnpointsRED.get(ir), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.RED));
+                        ir++;
+                    }
+
+                    if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.YELLOW.toString())) {
+                        if (iy >= spawnpointsYELLOW.size()) {
+                            iy = 0;
+                        }
+                        this.getPlayerInfo(uuid).setSavedPlayerState(playerSetup.spawnPlayer(player, spawnpointsYELLOW.get(iy), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.YELLOW));
+                        iy++;
+                    }
+
+                    if (this.getTeamManagerModule().getTeam(uuid).equals(BedwarsTeam.GREEN.toString())) {
+                        if (ig >= spawnpointsGREEN.size()) {
+                            ig = 0;
+                        }
+                        this.getPlayerInfo(uuid).setSavedPlayerState(playerSetup.spawnPlayer(player, spawnpointsGREEN.get(ig), BedwarsPlayer.getPlayer(player.getUniqueId()).getKit(), BedwarsTeam.GREEN));
+                        ig++;
+                    }
                 }
+            } catch(Exception e){
+                e.printStackTrace();
+                this.stop("Error", GameStopReason.GAME_ERROR);
             }
             future.complete(true);
         });
@@ -255,27 +287,26 @@ public class BedwarsHandler extends GameHandler {
 
         BedwarsTeam team = BedwarsTeam.getTeam(getTeamManagerModule().getTeam(player));
 
-        this.getModule(ModulePlayerSetup.class).killPlayer(p, !existingBeds.contains(team)); //TODO check if bed is destroyed
+        this.getModule(ModulePlayerSetup.class).killPlayer(p, this.getTeamInfo(team).isBedDestroyed());
 
-        if (!existingBeds.contains(team)) {
+        if (this.getTeamInfo(team).isBedDestroyed()) {
             this.kickPlayer(player);
             this.sendGameMessage(ChatColor.RED + p.getName() + ChatColor.GRAY + " has been " + ChatColor.AQUA + "eliminated" + ChatColor.GRAY + " by " + ChatColor.YELLOW + cause, "Death");
             return;
         }
 
-        this.sendGameMessage(ChatColor.RED + p.getName() + ChatColor.GRAY + " has been killed by " + ChatColor.YELLOW + cause, "Death");
-
-
-        if (respawning.contains(player)) {
+        if (this.getPlayerInfo(player).isRespawning()) {
             return;
         }
+
+        this.sendGameMessage(ChatColor.RED + p.getName() + ChatColor.GRAY + " has been killed by " + ChatColor.YELLOW + cause, "Death");
 
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_HURT, 10f, 1f);
         p.sendTitle(ChatColor.RED + "" + ChatColor.BOLD + "You Died!", "You will respawn in " + Math.ceil(RESPAWN_TIME_SECONDS) + " seconds");
         p.setAllowFlight(true);
         p.setFlying(true);
 
-        respawning.add(player);
+        this.getPlayerInfo(player).setRespawning(true);
 
         //RESPAWN TASk
         new BukkitRunnable() {
@@ -288,7 +319,7 @@ public class BedwarsHandler extends GameHandler {
                 //If they are not playing anymore, or never were, don't respawn
                 if (!isPlaying(player)) {
                     Bukkit.getScheduler().cancelTask(this.getTaskId());
-                    respawning.remove(player);
+                    getPlayerInfo(player).setRespawning(false);
                     return;
                 }
 
@@ -298,7 +329,7 @@ public class BedwarsHandler extends GameHandler {
                 if (--counter <= 0) {
                     Bukkit.getScheduler().cancelTask(this.getTaskId());
 
-                    respawning.remove(player);
+                    getPlayerInfo(player).setRespawning(false);
 
                     //Respawn player
                     ArrayList<Location> spawns = getPointTracker().getSpawnpoints(BedwarsTeam.getTeam(getTeamManagerModule().getTeam(player)));
@@ -322,10 +353,10 @@ public class BedwarsHandler extends GameHandler {
         this.getTeamManagerModule().removePlayer(player);
 
         if (restore) {
-            SavedPlayerState state = playerStates.get(player);
+            SavedPlayerState state = getPlayerInfo(player).getSavedPlayerState();
             if (state != null) {
                 state.restore(Bukkit.getPlayer(player));
-                playerStates.remove(player);
+                getPlayerInfo(player).setSavedPlayerState(null);
             }
         }
 
@@ -367,18 +398,12 @@ public class BedwarsHandler extends GameHandler {
         }
     }
 
-    public void setBedBroken(BedwarsTeam team, boolean value) {
-        if (value) {
-            existingBeds.remove(team);
-        } else {
-            if (!existingBeds.contains(team)) {
-                existingBeds.add(team);
-            }
-        }
+    public void setBedBroken(@NotNull BedwarsTeam team, boolean value) {
+        this.getTeamInfo(team).setBedDestroyed(value);
     }
 
     public boolean isRespawning(UUID player) {
-        return this.respawning.contains(player);
+        return this.getPlayerInfo(player).isRespawning();
     }
 
     @Override
@@ -390,8 +415,8 @@ public class BedwarsHandler extends GameHandler {
     public boolean addSpectator(UUID player) {
         spectating.add(player);
 
-        if (!playerStates.containsKey(player)) {
-            playerStates.put(player, new SavedPlayerState(Bukkit.getPlayer(player)));
+        if (this.getPlayerInfo(player).getSavedPlayerState() == null) {
+            this.getPlayerInfo(player).setSavedPlayerState(new SavedPlayerState(Bukkit.getPlayer(player)));
         }
 
         getModule(ModulePlayerSetup.class).makeSpectator(Bukkit.getPlayer(player));
@@ -402,12 +427,12 @@ public class BedwarsHandler extends GameHandler {
     @Override
     public void kickSpectator(UUID player) {
 
-        SavedPlayerState state = playerStates.get(player);
+        SavedPlayerState state = this.getPlayerInfo(player).getSavedPlayerState();
         spectating.remove(player);
 
         if (state != null) {
             state.restore(Bukkit.getPlayer(player));
-            playerStates.remove(player);
+            this.getPlayerInfo(player).setSavedPlayerState(null);
         }
     }
 

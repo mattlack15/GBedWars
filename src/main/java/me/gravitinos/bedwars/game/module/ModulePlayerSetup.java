@@ -2,6 +2,7 @@ package me.gravitinos.bedwars.game.module;
 
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.BedwarsTeam;
+import me.gravitinos.bedwars.game.info.PermanentArmorType;
 import me.gravitinos.bedwars.game.module.gameitems.BedwarsItem;
 import me.gravitinos.bedwars.game.module.playersetup.Kit;
 import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
@@ -46,12 +47,19 @@ public class ModulePlayerSetup extends GameModule {
         player.setFoodLevel(20);
         player.setSaturation(20);
         player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-        player.teleport(spawn, PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
+        player.teleport(spawn, PlayerTeleportEvent.TeleportCause.PLUGIN);
         player.getEnderChest().clear();
 
         player.getInventory().setContents(kit.getContents());
 
         TeamDresser.dressPlayer(player, team.getColour());
+
+        PermanentArmorType permanentArmorType = ((BedwarsHandler)getGameHandler()).getPlayerInfo(player.getUniqueId()).getPermanentArmorType();
+
+        if(permanentArmorType != PermanentArmorType.LEATHER){
+            player.getInventory().setLeggings(permanentArmorType.getLeggings()); //Currently only leggings
+        }
+
         HideUtil.unHidePlayer(player);
 
         return state;
@@ -85,7 +93,7 @@ public class ModulePlayerSetup extends GameModule {
             
             com.sk89q.worldedit.Vector teleportPoint = handler.getMapRegion().getCenter().setY(handler.getPointTracker().getBedBLUE().getY() + 20);
             try {
-                player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(handler.getMapRegion().getWorld()).getName()), teleportPoint.getX(), teleportPoint.getY(), teleportPoint.getZ()), PlayerTeleportEvent.TeleportCause.COMMAND);
+                player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(handler.getMapRegion().getWorld()).getName()), teleportPoint.getX(), teleportPoint.getY(), teleportPoint.getZ()), PlayerTeleportEvent.TeleportCause.PLUGIN);
             } catch (Exception e){
                 e.printStackTrace();
             }

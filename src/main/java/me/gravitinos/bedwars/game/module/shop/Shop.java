@@ -53,6 +53,7 @@ public class Shop {
         villager.setSilent(true);
         villager.setCustomName(ChatColor.translateAlternateColorCodes('&', this.displayName));
         villager.setCustomNameVisible(true);
+        villager.setRemoveWhenFarAway(false);
         this.villager = new EntityStore<>(villager);
     }
 

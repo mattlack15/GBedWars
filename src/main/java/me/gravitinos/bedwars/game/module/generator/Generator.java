@@ -100,7 +100,7 @@ public class Generator implements ArmorStandTextHolder {
 
     public void createItem() {
         this.removeItem();
-        Location loc = location.clone().add(0.5, 2.5, 0.5);
+        Location loc = location.clone().add(0.5, 2.2, 0.5);
         ArmorStand item1 = ArmorStandFactory.createHidden(loc);
         item1.setGravity(false);
         item1.setHelmet(this.displayItem);
