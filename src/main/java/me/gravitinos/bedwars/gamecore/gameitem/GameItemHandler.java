@@ -68,7 +68,9 @@ public abstract class GameItemHandler {
         if(stack == null){
             return stack2 == null;
         }
-        return stack.isSimilar(stack2);
+        ItemStack stack3 = stack.clone();
+        stack3.setDurability(stack2.getDurability());
+        return stack2.isSimilar(stack3);
     }
 
     protected boolean basicIsMatch(@NotNull ItemStack stack, String identifier){

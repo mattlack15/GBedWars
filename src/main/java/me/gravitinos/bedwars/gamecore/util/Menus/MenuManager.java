@@ -85,7 +85,11 @@ public class MenuManager implements Listener {
                 InvInfo info = this.getInfo(p.getUniqueId());
                 if (info != null) {
                     if (info.getCurrentMenu() != null && info.getCurrentMenu().equals(m)) {
-                        m.open(p, info.getData());
+                        if (info.getCurrentInv() == null) {
+                            m.open(p, info.getData());
+                        } else {
+                            info.getCurrentInv().setContents(m.buildInventory().getContents());
+                        }
                     }
                 }
             }

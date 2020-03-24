@@ -1,6 +1,7 @@
 package me.gravitinos.bedwars.game.module.shop;
 
 import me.gravitinos.bedwars.gamecore.util.EntityStore;
+import me.gravitinos.bedwars.gamecore.util.HoloTextBox;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.*;
@@ -14,9 +15,11 @@ public class Shop {
     private EntityStore<Villager> villager = new EntityStore<>(null);
     private ShopInventory inventory;
     private String displayName;
+    private HoloTextBox holoTextBox;
     public Shop(@NotNull String displayName, @NotNull Location location, @NotNull ShopInventory inventory){
         this.location = location;
         this.inventory = inventory;
+        this.holoTextBox = new HoloTextBox(location.clone().add(0.5, 2.25, 0.5), 0.3, true);
         this.displayName = displayName;
     }
 
@@ -51,10 +54,12 @@ public class Shop {
         villager.setCollidable(false);
         villager.setInvulnerable(true);
         villager.setSilent(true);
-        villager.setCustomName(ChatColor.translateAlternateColorCodes('&', this.displayName));
-        villager.setCustomNameVisible(true);
         villager.setRemoveWhenFarAway(false);
         this.villager = new EntityStore<>(villager);
+
+        this.holoTextBox.clear();
+        this.holoTextBox.addLine("&bRight Click to Open");
+        this.holoTextBox.addLine(this.displayName);
     }
 
     public UUID getEntityUUID(){
@@ -67,6 +72,11 @@ public class Shop {
         if(ent != null){
             ent.remove();
         }
+        this.holoTextBox.clear();
+    }
+
+    public HoloTextBox getHoloTextBox(){
+        return this.holoTextBox;
     }
 
     public Villager getEntity(){

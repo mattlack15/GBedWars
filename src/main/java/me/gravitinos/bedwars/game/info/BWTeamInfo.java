@@ -39,8 +39,15 @@ public class BWTeamInfo {
         this.teamUpgrades.put(upgrade, level);
     }
 
-    public void removeTeamUpdate(TeamUpgrade upgrade){
+    public void removeTeamUpdgrade(TeamUpgrade upgrade){
         this.teamUpgrades.remove(upgrade);
+    }
+
+    public int getTeamUpdradeLevel(TeamUpgrade upgrade){
+        if(this.teamUpgrades.containsKey(upgrade)){
+            return this.teamUpgrades.get(upgrade);
+        }
+        return 0;
     }
 
     /**

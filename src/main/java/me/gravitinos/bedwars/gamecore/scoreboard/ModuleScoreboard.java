@@ -18,7 +18,10 @@ import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class ModuleScoreboard extends GameModule {
     private ArrayList<SBElement> elements = new ArrayList<>();
@@ -26,34 +29,45 @@ public class ModuleScoreboard extends GameModule {
     private String title;
     private boolean enabled = false;
     private ArrayList<UUID> players = new ArrayList<>();
+    private Map<UUID, Scoreboard> oldScoreboards = new HashMap<>();
 
-    public ModuleScoreboard(@NotNull GameHandler gameHandler, @NotNull String title, @NotNull SBScope scoreboardScope) {
+    private ArrayList<Consumer<Player>> playerSpecificHandlers = new ArrayList<>();
+    private ArrayList<Consumer<Scoreboard>> handlers = new ArrayList<>();
+
+    private Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+
+    public ModuleScoreboard(GameHandler gameHandler, @NotNull String title, @NotNull SBScope scoreboardScope) {
         super(gameHandler, "Scoreboard");
         this.scope = scoreboardScope;
 
-        if(this.scope.equals(SBScope.EVERYONE)){
+        if (this.scope.equals(SBScope.EVERYONE)) {
             Bukkit.getOnlinePlayers().forEach(p -> this.addPlayer(p.getUniqueId()));
         }
 
-        new BukkitRunnable(){
+        new BukkitRunnable() {
             @Override
             public void run() {
-                if(!enabled){
+                if (!enabled) {
                     return;
                 }
-                for(UUID ids : players){
+                for (UUID ids : players) {
                     Player player = Bukkit.getPlayer(ids);
-                    if(player == null){
+                    if (player == null) {
                         continue;
                     }
                     Scoreboard board = player.getScoreboard();
+                    if (board != scoreboard) {
+                        oldScoreboards.put(ids, board);
+                        player.setScoreboard(scoreboard);
+                        board = scoreboard;
+                    }
 
                     Objective objective = board.getObjective("sidebar");
                     if (objective == null) {
                         board.clearSlot(DisplaySlot.SIDEBAR);
                         objective = board.registerNewObjective("sidebar", "dummy");
                     }
-                    if(objective.getDisplaySlot() != DisplaySlot.SIDEBAR){
+                    if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) {
                         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
                     }
 
@@ -63,7 +77,7 @@ public class ModuleScoreboard extends GameModule {
                     // that don't have a corresponding element
 
                     int i = elements.size();
-                    for(SBElement element : elements){
+                    for (SBElement element : elements) {
                         Team team = board.getTeam(element.getName());
                         String text = ChatColor.translateAlternateColorCodes('&', element.getText());
 
@@ -71,12 +85,12 @@ public class ModuleScoreboard extends GameModule {
                         String suffix = "";
 
                         //Process text
-                        if(text.length() <= 16){
+                        if (text.length() <= 16) {
                             //Is less than or is 16 chars long, only need prefix
                             prefix = text;
                         } else {
                             //More than 16 chars long, need suffix as well
-                            if(text.charAt(15) == ChatColor.COLOR_CHAR){
+                            if (text.charAt(15) == ChatColor.COLOR_CHAR) {
                                 //If the char at 15 is a color char
                                 prefix = text.substring(0, 15); //Include it in the suffix
                                 suffix = text.substring(15);
@@ -87,7 +101,7 @@ public class ModuleScoreboard extends GameModule {
                             }
                         }
 
-                        if(suffix.length() > 16){
+                        if (suffix.length() > 16) {
                             suffix = suffix.substring(0, 16);
                         }
 
@@ -97,7 +111,7 @@ public class ModuleScoreboard extends GameModule {
                             team = null;
                         }
 
-                        if(team == null){
+                        if (team == null) {
                             element.setName(getNonExistingName(ChatColor.getLastColors(prefix)));
                             team = board.registerNewTeam(element.getName());
                         }
@@ -117,28 +131,40 @@ public class ModuleScoreboard extends GameModule {
 
                     Objective finalObjective = objective;
 
+                    Scoreboard finalBoard = board;
                     Lists.newArrayList(board.getEntries()).forEach(entry -> { //Get rid of lines that aren't supposed to be there
-                        if(finalObjective.getScore(entry).isScoreSet()){
-                            if(!foundValidElements.contains(entry)){
-                                board.resetScores(entry);
-                                if(board.getTeam(entry) != null){
+                        if (finalObjective.getScore(entry).isScoreSet()) {
+                            if (!foundValidElements.contains(entry)) {
+                                finalBoard.resetScores(entry);
+                                if (finalBoard.getTeam(entry) != null) {
                                     try {
-                                        board.getTeam(entry).unregister();
-                                    } catch(Exception ignored){
+                                        finalBoard.getTeam(entry).unregister();
+                                    } catch (Exception ignored) {
                                     }
                                 }
                             }
                         }
                     });
+
+                    playerSpecificHandlers.forEach(h -> h.accept(player));
                 }
+                handlers.forEach(h -> h.accept(scoreboard));
             }
         }.runTaskTimer(CoreHandler.main, 0, 2);
+    }
+
+    public void addPlayerSpecificHandler(Consumer<Player> handler){
+        this.playerSpecificHandlers.add(handler);
+    }
+
+    public void addHandler(Consumer<Scoreboard> handler){
+        this.handlers.add(handler);
     }
 
     private String getNonExistingName(String lastColors) {
         boolean foundOne = false;
         String name = "";
-        while(!foundOne) {
+        while (!foundOne) {
             name = SBElement.getRandom12CharName(lastColors);
             foundOne = true;
             for (SBElement element : elements) {
@@ -150,6 +176,10 @@ public class ModuleScoreboard extends GameModule {
         return name;
     }
 
+    public Scoreboard getScoreboard(){
+        return this.scoreboard;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -159,40 +189,60 @@ public class ModuleScoreboard extends GameModule {
     }
 
     public void setEnabled(boolean enabled) {
+        if (!enabled) {
+            for (UUID ids : Lists.newArrayList(oldScoreboards.keySet())) {
+                Player p = Bukkit.getPlayer(ids);
+                if (p == null) {
+                    oldScoreboards.remove(ids);
+                    continue;
+                }
+                p.setScoreboard(oldScoreboards.get(ids));
+                oldScoreboards.remove(ids);
+            }
+        }
         this.enabled = enabled;
     }
 
     /**
      * Sets the title for this scoreboard
+     *
      * @param title The title to set to
      */
-    public void setTitle(String title){
+    public void setTitle(String title) {
         this.title = title;
     }
 
     /**
      * Add a player to this scoreboard
+     *
      * @param id The UUID of the player to add
      */
-    public void addPlayer(@NotNull UUID id){
+    public void addPlayer(@NotNull UUID id) {
         this.players.add(id);
     }
 
     /**
      * Remove a player from this scoreboard
+     *
      * @param id The UUID of the player to remove
      */
-    public void removePlayer(@NotNull UUID id){
+    public void removePlayer(@NotNull UUID id) {
+        Player p = Bukkit.getPlayer(id);
+        if (p != null && oldScoreboards.containsKey(id)) {
+            p.setScoreboard(oldScoreboards.get(id));
+        }
+        oldScoreboards.remove(id);
         this.players.remove(id);
     }
 
     /**
      * Add an element to this scoreboard
+     *
      * @param element The element to add
      * @return True if it was added, false if this scoreboard has reached the max elements possible (15)
      */
-    public boolean addElement(@NotNull SBElement element){
-        if(elements.size() >= 15){
+    public boolean addElement(@NotNull SBElement element) {
+        if (elements.size() >= 15) {
             return false;
         }
         elements.add(element);
@@ -200,18 +250,16 @@ public class ModuleScoreboard extends GameModule {
     }
 
     @EventSubscription
-    private void onJoin(PlayerJoinEvent event){
-        if(this.scope.equals(SBScope.EVERYONE)){
+    private void onJoin(PlayerJoinEvent event) {
+        if (this.scope.equals(SBScope.EVERYONE)) {
             this.addPlayer(event.getPlayer().getUniqueId());
         }
     }
 
     @EventSubscription
-    private void onLeave(PlayerQuitEvent event){
+    private void onLeave(PlayerQuitEvent event) {
         this.removePlayer(event.getPlayer().getUniqueId());
     }
-
-
 
 
 }

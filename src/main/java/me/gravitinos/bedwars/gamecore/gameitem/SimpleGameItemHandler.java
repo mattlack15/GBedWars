@@ -16,7 +16,7 @@ public abstract class SimpleGameItemHandler extends GameItemHandler {
      * @param itemIdentifier
      * @param levelIdentifier
      */
-    public SimpleGameItemHandler(@NotNull ModuleGameItems module, @NotNull String name, @NotNull String itemIdentifier, @NotNull String levelIdentifier){
+    public SimpleGameItemHandler(@NotNull ModuleGameItems module, @NotNull String name, String itemIdentifier, String levelIdentifier){
         super(module, name);
         this.itemIdentifier = itemIdentifier;
         this.levelIdentifier = levelIdentifier;

@@ -1,22 +1,16 @@
 package me.gravitinos.bedwars.gamecore.handler;
 
 import com.google.common.collect.Lists;
-import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
+import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
-import me.gravitinos.bedwars.gamecore.util.WeakList;
-import org.bukkit.Bukkit;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
-import static java.lang.reflect.Modifier.PRIVATE;
 
 public abstract class GameHandler {
 
@@ -43,7 +37,7 @@ public abstract class GameHandler {
     /**
      * Get the maximum length of the game in seconds
      *
-     * @return Max length of game in seconds
+     * @return Max length of game in seconds, may be -1 for undefined
      */
     public int getMaxGameLengthSeconds() {
         return this.maxGameLengthSeconds;
@@ -116,7 +110,7 @@ public abstract class GameHandler {
      * @param players List of players that will be playing
      * @return Future that completes with a result representing whether the game was started or not
      */
-    public abstract CompletableFuture<Boolean> start(ArrayList<UUID> players);
+    public abstract CompletableFuture<Boolean> start(ArrayList<BaseParty> players);
 
     /**
      * Stops the game

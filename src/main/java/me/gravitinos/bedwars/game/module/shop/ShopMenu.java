@@ -1,9 +1,11 @@
 package me.gravitinos.bedwars.game.module.shop;
 
 import com.google.common.collect.Lists;
+import me.gravitinos.bedwars.gamecore.util.ItemBuilder;
 import me.gravitinos.bedwars.gamecore.util.Menus.Menu;
 import me.gravitinos.bedwars.gamecore.util.Menus.MenuElement;
 import me.gravitinos.bedwars.gamecore.util.Menus.MenuManager;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -18,20 +20,28 @@ public class ShopMenu extends Menu {
         this.setup(this.shop.getInventory().getMainSection());
     }
 
-    private void setup(@NotNull String section){
-        this.setAll(new MenuElement(null));
+    public ShopMenu(Shop shop, String section){
+        super("Shop", 6);
+        this.shop = shop;
+        this.setup(section);
+    }
 
-        int i = 1;
-        for(String sections : shop.getInventory().getSections()){
+    private void setup(@NotNull String section){
+        this.setAll(null);
+        this.fillElement(new MenuElement(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte) 7).setName(" ").build())
+        .setClickHandler((e, i) -> ((Player)e.getWhoClicked()).playSound(e.getWhoClicked().getLocation(), Sound.ENTITY_ITEM_BREAK, 0.8f, 1f)));
+
+        int i = 10;
+        for(ShopSection sections : shop.getInventory().getSections()){
             if(i % 9 == 8){
                 i = (i - (i%9)) + 9 + 1; //Make i = to next line but at the same col as starting position
             }
-            ItemStack stack = shop.getInventory().getSectionDisplayItem(sections);
-            this.setElement(i, new MenuElement(stack).setClickHandler((event, invInfo) -> setup(sections)));
+            ItemStack stack = sections.getDisplayItem();
+            this.setElement(i, new MenuElement(stack).setClickHandler((event, invInfo) -> setup(sections.getSectionName())));
             i++;
         }
 
-        int START_POS = 20;
+        int START_POS = 29;
         int pos = START_POS;
 
         for(ShopItem items : shop.getInventory().getItems(section)){
@@ -48,17 +58,17 @@ public class ShopMenu extends Menu {
 
                 //Check and remove needed
                 if(items.getNeeded() != null) {
-                    if (!p.getInventory().containsAtLeast(items.getNeeded(), items.getNeeded().getAmount())) {
+                    if (!p.getInventory().containsAtLeast(items.getNeeded().get(), items.getNeeded().get().getAmount())) {
                         p.playSound(p.getLocation(), Sound.ENTITY_ITEM_BREAK, 2f, 1f);
                         this.getElement(event.getSlot()).addTempLore(this, "&cYou don't have enough materials to buy this!", 60);
                         return;
                     }
-                    int amount = items.getNeeded().getAmount();
+                    int amount = items.getNeeded().get().getAmount();
                     for (ItemStack stacks : Lists.newArrayList(p.getInventory().getContents())) {
                         if(stacks == null){
                             continue;
                         }
-                        if (stacks.isSimilar(items.getNeeded())) {
+                        if (stacks.isSimilar(items.getNeeded().get())) {
                             if (amount <= 0) {
                                 break;
                             }
@@ -74,6 +84,7 @@ public class ShopMenu extends Menu {
 
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2f, 1f);
                 items.getGiver().accept(p);
+                setup(section);
             })));
 
             pos++;

@@ -7,19 +7,23 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class ShopItem {
-    private ItemStack needed;
+    private Supplier<ItemStack> needed;
     private Consumer<Player> giver;
-    private ItemStack displayItem;
+    private Supplier<ItemStack> displayItemSupplier;
+    private boolean autoPriceAdding;
 
     public ShopItem(ItemStack needed, @NotNull ItemStack displayItem, @NotNull Consumer<Player> giver, boolean autoPriceAdding){
+        this(() -> needed, () -> displayItem, giver, autoPriceAdding);
+    }
+
+    public ShopItem(Supplier<ItemStack> needed, @NotNull Supplier<ItemStack> displayItemSupplier, @NotNull Consumer<Player> giver, boolean autoPriceAdding){
         this.needed = needed;
         this.giver = giver;
-        this.displayItem = displayItem.clone();
-        if(autoPriceAdding){
-            this.displayItem = addPrice(this.displayItem, needed);
-        }
+        this.displayItemSupplier = displayItemSupplier;
+        this.autoPriceAdding = autoPriceAdding;
     }
 
     public ShopItem(ItemStack needed, @NotNull ItemStack displayItem, @NotNull ItemStack item, boolean autoPriceAdding){
@@ -39,11 +43,11 @@ public class ShopItem {
     }
 
     public ItemStack getDisplayItem() {
-        return displayItem;
+        return autoPriceAdding ? addPrice(displayItemSupplier.get(), needed.get()) : displayItemSupplier.get();
     }
 
     @Nullable
-    public ItemStack getNeeded() {
+    public Supplier<ItemStack> getNeeded() {
         return needed;
     }
 }

@@ -5,23 +5,85 @@ import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.enchantments.EnchantmentTarget;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionType;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ItemBuilder {
+
+	private class EnchantGlow extends Enchantment {
+		public EnchantGlow() {
+			super(6969);
+		}
+
+		@Override
+		public String getName() {
+			return "Glow";
+		}
+
+		@Override
+		public int getMaxLevel() {
+			return 1;
+		}
+
+		@Override
+		public int getStartLevel() {
+			return 1;
+		}
+
+		@Override
+		public EnchantmentTarget getItemTarget() {
+			return EnchantmentTarget.ALL;
+		}
+
+		@Override
+		public boolean isTreasure() {
+			return false;
+		}
+
+		@Override
+		public boolean isCursed() {
+			return false;
+		}
+
+		@Override
+		public boolean conflictsWith(Enchantment enchantment) {
+			return false;
+		}
+
+		@Override
+		public boolean canEnchantItem(ItemStack itemStack) {
+			return true;
+		}
+	}
+
 	private ItemStack item;
+
+	public ItemBuilder(PotionType type, boolean extended, boolean upgraded){
+		this.item = new ItemStack(Material.POTION, 1);
+		PotionMeta meta = (PotionMeta) this.item.getItemMeta();
+		meta.setBasePotionData(new PotionData(type, extended, upgraded));
+		this.item.setItemMeta(meta);
+	}
+
 	public ItemBuilder(Material m, int amount) {
-		if(m == null) {
+		if (m == null) {
 			this.item = null;
 			return;
 		}
 		this.item = new ItemStack(m, amount);
 	}
+
 	public ItemBuilder(Material m, int amount, byte data) {
 		if(m == null) {
 			this.item = null;
@@ -29,6 +91,17 @@ public class ItemBuilder {
 		}
 		this.item = new ItemStack(m, amount, data);
 	}
+
+	public ItemBuilder setDurability(short val){
+		this.item.setDurability(val);
+		return this;
+	}
+
+	public ItemBuilder setDurabilityLeft(short val){
+		this.item.setDurability((short)(this.item.getType().getMaxDurability() - val + 1));
+		return this;
+	}
+
 	public ArrayList<String> getLore(){
 		ItemMeta meta = item.getItemMeta();
 		List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
@@ -53,9 +126,26 @@ public class ItemBuilder {
 		return this;
 	}
 
+	public ItemBuilder setItemMeta(ItemMeta meta){
+		this.item.setItemMeta(meta);
+		return this;
+	}
+
+	public ItemBuilder addItemFlags(ItemFlag... flags){
+		ItemMeta meta = this.item.getItemMeta();
+		meta.addItemFlags(flags);
+		this.item.setItemMeta(meta);
+		return this;
+	}
+
+	public ItemMeta getItemMeta(){
+		return this.item.getItemMeta();
+	}
+
 	public ItemBuilder setUnbreakable(boolean bool){
 		ItemMeta meta = this.item.getItemMeta();
 		meta.spigot().setUnbreakable(bool);
+		meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
 		this.item.setItemMeta(meta);
 		return this;
 	}
@@ -95,6 +185,26 @@ public class ItemBuilder {
 		}
 		meta.setLore(lore1);
 		item.setItemMeta(meta);
+		return this;
+	}
+
+	public ItemBuilder clearLore(){
+		ItemMeta meta = item.getItemMeta();
+		meta.setLore(new ArrayList<>());
+		item.setItemMeta(meta);
+		return this;
+	}
+
+	public ItemBuilder addGlow(){
+		try{
+			Field field = Enchantment.class.getDeclaredField("acceptingNew");
+			field.setAccessible(true);
+			field.set(null, true);
+			if(Enchantment.getByName(new EnchantGlow().getName()) == null){
+				Enchantment.registerEnchantment(new EnchantGlow());
+			}
+		} catch(Exception ignored){}
+		this.item.addUnsafeEnchantment(new EnchantGlow(), 1);
 		return this;
 	}
 

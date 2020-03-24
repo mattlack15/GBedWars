@@ -10,12 +10,11 @@ import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -23,12 +22,22 @@ import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.material.Bed;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Random;
 
+/**
+ * This module is used for the game environment, which includes the following
+ * - Keeping track of player-modified blocks, and reverting them when the game finishes (on revertBlocks())
+ * - Making sure items do not de-spawn
+ * - Handling Item pickups, what you can modify in your inventory
+ * - And other stuff
+ */
 public class ModuleGameEnvironment extends GameModule {
 
     public static final String PLAYER_PLACED_BLOCK_META = "BW_PLAYER_PLACED";
@@ -61,6 +70,34 @@ public class ModuleGameEnvironment extends GameModule {
             bs.update(true, false);
 
         }
+
+        new BukkitRunnable(){
+            @Override
+            public void run() {
+                if(!getGameHandler().isRunning())
+                    return;
+
+                for(BedwarsTeam team : BedwarsTeam.values()){
+                    BedwarsHandler handler = (BedwarsHandler) getGameHandler();
+                    if(handler.getTeamInfo(team).isBedDestroyed()){
+                        continue;
+                    }
+                    Location loc = handler.getPointTracker().getBed(team).clone();
+                    org.bukkit.util.Vector dirToMid = handler.getPointTracker().getMidGens().get(0).toVector().subtract(loc.toVector()).normalize();
+                    loc.add(0.5, 0, 0.5);
+                    loc.add(dirToMid.multiply(0.5));
+
+                    Random rand = new Random(System.currentTimeMillis());
+                    for(int i = 0; i < 6; i++) {
+                        double x = rand.nextDouble() * 2 - 1;
+                        double y = rand.nextDouble() * 1.5;
+                        double z = rand.nextDouble() * 2 - 1;
+
+                        loc.getWorld().spawnParticle(Particle.SUSPENDED_DEPTH, loc.clone().add(x, y, z), 1);
+                    }
+                }
+            }
+        }.runTaskTimer(CoreHandler.main, 0, 10);
     }
 
     /**
@@ -78,6 +115,7 @@ public class ModuleGameEnvironment extends GameModule {
     public void revertBlocks() {
         for (int i = revert.size() - 1; i >= 0; i--) {
             revert.get(i).update(true);
+            revert.get(i).removeMetadata(PLAYER_PLACED_BLOCK_META, CoreHandler.main);
         }
         revert.clear();
     }
@@ -97,6 +135,9 @@ public class ModuleGameEnvironment extends GameModule {
                 event.setCancelled(true);
             }
         }
+        if(getGameHandler().isSpectating(event.getEntity().getUniqueId())){
+            event.setCancelled(true);
+        }
     }
 
     @EventSubscription
@@ -109,7 +150,14 @@ public class ModuleGameEnvironment extends GameModule {
         }
     }
 
-                                  @EventSubscription
+    @EventSubscription
+    private void onBedSleep(PlayerBedEnterEvent event){
+        if (getGameHandler().isPlaying(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventSubscription
     private void onBreak(BlockBreakEvent event) {
         if (getGameHandler().isPlaying(event.getPlayer().getUniqueId())) {
             Location loc = event.getBlock().getLocation();
@@ -132,6 +180,8 @@ public class ModuleGameEnvironment extends GameModule {
                 for(int i = 0; i < BedwarsTeam.values().length; i++){
                     Location l = ((BedwarsHandler)getGameHandler()).getPointTracker().getBed(BedwarsTeam.values()[i]);
                     if(blockToLookFor.equals(l)){
+                        //Bed broken
+
                         BedwarsTeam team = BedwarsTeam.getTeam(((BedwarsHandler)getGameHandler()).getTeamManagerModule().getTeam(event.getPlayer().getUniqueId()));
 
                         if(team == BedwarsTeam.values()[i]){
@@ -140,8 +190,9 @@ public class ModuleGameEnvironment extends GameModule {
                             return;
                         }
 
-                        ((BedwarsHandler)getGameHandler()).sendGameMessage(BedwarsTeam.values()[i].toString().toUpperCase() + "'s bed has been broken by " + event.getPlayer().getName() + ", their players can no longer respawn!", "Game");
-                        ((BedwarsHandler)getGameHandler()).setBedBroken(BedwarsTeam.values()[i], true);
+                        ((BedwarsHandler)getGameHandler()).setBedBroken(BedwarsTeam.values()[i], true, event.getPlayer().getName());
+
+                        event.setDropItems(false);
                         return;
                     }
                 }
@@ -152,15 +203,19 @@ public class ModuleGameEnvironment extends GameModule {
                 }
 
             }
+        } else if(getGameHandler().isRunning()){
+            if(((BedwarsHandler)getGameHandler()).getMapRegion().contains(new Vector(event.getBlock().getX(), event.getBlock().getY(), event.getBlock().getZ()))){
+                event.setCancelled(true);
+            }
         }
     }
 
     @EventSubscription
     private void onPlace(BlockPlaceEvent event) {
-        if (getGameHandler().isPlaying(event.getPlayer().getUniqueId())) {
+        if (getGameHandler().isRunning()) {
             if (this.isInRestrictedBuildingArea(event.getBlock().getLocation())) {
                 event.setCancelled(true);
-                ((BedwarsHandler)getGameHandler()).sendGameMessage( "You cannot place blocks here!", "Game");
+                ((BedwarsHandler)getGameHandler()).sendGameMessage(event.getPlayer(), "You cannot place blocks here!", "Game");
                 return;
             }
             event.getBlock().setMetadata(PLAYER_PLACED_BLOCK_META, new FixedMetadataValue(CoreHandler.main, true));

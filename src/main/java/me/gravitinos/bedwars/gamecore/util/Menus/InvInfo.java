@@ -18,6 +18,11 @@ public class InvInfo {
         this.data = data;
     }
 
+
+    public void setData(Object[] data) {
+        this.data = data;
+    }
+
     public Menu getCurrentMenu(){
         return this.currentMenu;
     }

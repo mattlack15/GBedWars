@@ -8,7 +8,7 @@ public abstract class GameModule {
     private String moduleName;
     private GameHandler gameHandler;
 
-    public GameModule(@NotNull GameHandler gameHandler, @NotNull String moduleName){
+    public GameModule(GameHandler gameHandler, @NotNull String moduleName){
         this.moduleName = moduleName;
         this.gameHandler = gameHandler;
         EventSubscriptions.instance.subscribe(this);

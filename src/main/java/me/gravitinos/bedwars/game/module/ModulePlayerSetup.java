@@ -1,5 +1,6 @@
 package me.gravitinos.bedwars.game.module;
 
+import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.BedwarsTeam;
 import me.gravitinos.bedwars.game.info.PermanentArmorType;
@@ -48,8 +49,7 @@ public class ModulePlayerSetup extends GameModule {
         player.setSaturation(20);
         player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
         player.teleport(spawn, PlayerTeleportEvent.TeleportCause.PLUGIN);
-        player.getEnderChest().clear();
-
+        Lists.newArrayList(player.getActivePotionEffects()).forEach(p -> player.removePotionEffect(p.getType()));
         player.getInventory().setContents(kit.getContents());
 
         TeamDresser.dressPlayer(player, team.getColour());
@@ -57,12 +57,18 @@ public class ModulePlayerSetup extends GameModule {
         PermanentArmorType permanentArmorType = ((BedwarsHandler)getGameHandler()).getPlayerInfo(player.getUniqueId()).getPermanentArmorType();
 
         if(permanentArmorType != PermanentArmorType.LEATHER){
-            player.getInventory().setLeggings(permanentArmorType.getLeggings()); //Currently only leggings
+            player.getInventory().setLeggings(permanentArmorType.getLeggings());
+            player.getInventory().setBoots(permanentArmorType.getBoots());
+
         }
 
         HideUtil.unHidePlayer(player);
 
         return state;
+    }
+
+    public SavedPlayerState killPlayer(Player player, boolean elimination){
+        return this.killPlayer(player, elimination, null);
     }
 
     /**
@@ -71,7 +77,7 @@ public class ModulePlayerSetup extends GameModule {
      * @param player Player to do procedure to
      * @return saved player state
      */
-    public SavedPlayerState killPlayer(Player player, boolean elimination) {
+    public SavedPlayerState killPlayer(Player player, boolean elimination, Player giveItemsTo) {
         SavedPlayerState state = new SavedPlayerState(player);
 
         BedwarsHandler bedwarsHandler = (BedwarsHandler)getGameHandler();
@@ -81,7 +87,11 @@ public class ModulePlayerSetup extends GameModule {
             }
             for (GameItemHandler gameItemHandlers : bedwarsHandler.getGameItemsModule().getGameItems()) {
                 if(gameItemHandlers.isMatch(contents) && gameItemHandlers.getName().startsWith("RESOURCE_")){
-                    player.getWorld().dropItemNaturally(player.getLocation(), contents);
+                    if(giveItemsTo == null) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), contents);
+                    } else {
+                        giveItemsTo.getInventory().addItem(contents);
+                    }
                 }
             }
         }
@@ -91,7 +101,7 @@ public class ModulePlayerSetup extends GameModule {
             
             BedwarsHandler handler = (BedwarsHandler) this.getGameHandler();
             
-            com.sk89q.worldedit.Vector teleportPoint = handler.getMapRegion().getCenter().setY(handler.getPointTracker().getBedBLUE().getY() + 20);
+            com.sk89q.worldedit.Vector teleportPoint = handler.getMapRegion().getCenter().setY(handler.getPointTracker().getBed(BedwarsTeam.BLUE).getY() + 20);
             try {
                 player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(handler.getMapRegion().getWorld()).getName()), teleportPoint.getX(), teleportPoint.getY(), teleportPoint.getZ()), PlayerTeleportEvent.TeleportCause.PLUGIN);
             } catch (Exception e){
@@ -115,6 +125,7 @@ public class ModulePlayerSetup extends GameModule {
         player.setGameMode(GameMode.ADVENTURE);
         player.setAllowFlight(true);
         player.setFlying(true);
+        player.getInventory().clear();
         return state;
     }
 }

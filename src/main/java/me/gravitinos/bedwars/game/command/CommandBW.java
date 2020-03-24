@@ -1,7 +1,10 @@
 package me.gravitinos.bedwars.game.command;
 
 import me.gravitinos.bedwars.game.SpigotBedwars;
+import me.gravitinos.bedwars.game.command.admin.CommandAC;
+import me.gravitinos.bedwars.game.command.admin.CommandOpenControl;
 import me.gravitinos.bedwars.game.command.admin.CommandStart;
+import me.gravitinos.bedwars.game.command.admin.CommandStop;
 import me.gravitinos.bedwars.game.command.configure.CommandCreateMap;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,6 +17,10 @@ public class CommandBW extends GravCommand {
     public CommandBW(){
         this.addSubCommand(new CommandStart(this, this.getSubCommandCmdPath()));
         this.addSubCommand(new CommandCreateMap(this, this.getSubCommandCmdPath()));
+        this.addSubCommand(new CommandStop(this, this.getSubCommandCmdPath()));
+        this.addSubCommand(new CommandOpenControl(this, this.getSubCommandCmdPath()));
+        this.addSubCommand(new CommandAC(this, this.getSubCommandCmdPath()));
+
     }
 
     @Override
@@ -23,7 +30,8 @@ public class CommandBW extends GravCommand {
 
     @Override
     public ArrayList<String> getAliases() {
-        return new ArrayList<String>() {{ add("bw"); }};
+        return new ArrayList<String>() {{ add("bw");
+        add("bedwars"); }};
     }
 
     @Override

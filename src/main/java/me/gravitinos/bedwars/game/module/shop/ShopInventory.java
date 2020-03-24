@@ -1,6 +1,5 @@
 package me.gravitinos.bedwars.game.module.shop;
 
-import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.util.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -11,42 +10,53 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class ShopInventory {
-    private Map<String, ArrayList<ShopItem>> inventory = new HashMap<>();
+    private ArrayList<ShopSection> sections = new ArrayList<>();
 
     private Map<String, ItemStack> sectionDisplayItems = new HashMap<>();
 
     private String mainSection;
 
-    public ShopInventory(@NotNull String mainSection){
+    public ShopInventory(@NotNull String mainSection) {
         this.mainSection = mainSection;
     }
 
-    public void addShopItem(@NotNull String section, @NotNull ShopItem item){
-        if(!inventory.containsKey(section)){
-            inventory.put(section, new ArrayList<>());
+    public void addShopItem(@NotNull String section, @NotNull ShopItem item) {
+        ShopSection sect = getSection(section);
+        if (sect != null) {
+            sect.addShopItem(item);
+            return;
         }
-        ArrayList<ShopItem> items = inventory.get(section);
-        items.add(item);
+        sect = new ShopSection(section);
+        sect.addShopItem(item);
+        this.sections.add(sect);
     }
 
-    public void setSectionDisplayItem(@NotNull String section, @NotNull ItemStack stack){
-        sectionDisplayItems.put(section, stack);
-    }
-
-    public ItemStack getSectionDisplayItem(@NotNull String section){
-        ItemStack stack = sectionDisplayItems.get(section);
-        if(stack == null){
-            return new ItemBuilder(Material.EMPTY_MAP, 1).setName("&f" + section).build();
+    public void setSectionDisplayItem(@NotNull String section, @NotNull ItemStack stack) {
+        ShopSection sect = getSection(section);
+        if(sect == null){
+            sect = new ShopSection(section);
+            this.addSection(sect);
         }
-        return stack;
+        sect.setDisplayItem(stack);
     }
 
-    public void addShopItem(@NotNull ShopItem item){
+    public ItemStack getSectionDisplayItem(@NotNull String section) {
+        ShopSection sect = getSection(section);
+        return sect.getDisplayItem();
+    }
+
+    public void addSection(ShopSection section) {
+        if (!sections.contains(section)) {
+            this.sections.add(section);
+        }
+    }
+
+    public void addShopItem(@NotNull ShopItem item) {
         this.addShopItem(getMainSection(), item);
     }
 
     @NotNull
-    public String getMainSection(){
+    public String getMainSection() {
         return this.mainSection;
     }
 
@@ -56,19 +66,33 @@ public abstract class ShopInventory {
 
     /**
      * Get the valid sections in this shop inventory
+     *
      * @return The valid sections
      */
-    public ArrayList<String> getSections(){
-        return Lists.newArrayList(inventory.keySet());
+    public ArrayList<ShopSection> getSections() {
+        return this.sections;
     }
 
     /**
      * Get the items from a section
+     *
      * @param section The section to get from
      * @return The shop items in the specified section
      */
-    public ArrayList<ShopItem> getItems(String section){
-        ArrayList<ShopItem> items = inventory.get(section);
-        return items != null ? items : new ArrayList<>();
+    public ArrayList<ShopItem> getItems(String sectionName) {
+        ShopSection section = getSection(sectionName);
+        if (section == null) {
+            return new ArrayList<>();
+        }
+        return section.getShopItems();
+    }
+
+    public ShopSection getSection(@NotNull String sectionName) {
+        for (ShopSection sections : this.sections) {
+            if (sections.getSectionName().equals(sectionName)) {
+                return sections;
+            }
+        }
+        return null;
     }
 }

@@ -10,6 +10,7 @@ import java.util.UUID;
 public class BWPlayerInfo {
 
     private UUID uuid;
+    private String name;
 
     private PermanentArmorType permanentArmorType = PermanentArmorType.LEATHER;
 
@@ -20,11 +21,19 @@ public class BWPlayerInfo {
 
     private boolean isRespawning = false;
 
+    private BedwarsTeam lastTeam;
+
     private BedwarsHandler handler;
 
-    public BWPlayerInfo(@NotNull BedwarsHandler handler, @NotNull UUID uuid){
+    public BWPlayerInfo(@NotNull BedwarsHandler handler, BedwarsTeam team, @NotNull UUID uuid, @NotNull String name){
         this.handler = handler;
         this.uuid = uuid;
+        this.name = name;
+        this.lastTeam = team;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void setBedsDestroyed(int bedsDestroyed) {
@@ -75,6 +84,10 @@ public class BWPlayerInfo {
         return bedsDestroyed;
     }
 
+    public BWTeamInfo getTeamInfo(){
+        return this.getHandler().getTeamInfo(this.getTeam());
+    }
+
     /**
      * Returns a value representing whether this player is respawning or not
      * @return
@@ -96,7 +109,11 @@ public class BWPlayerInfo {
      * @return The team
      */
     public BedwarsTeam getTeam(){
-        return BedwarsTeam.getTeam(handler.getTeamManagerModule().getTeam(uuid));
+        BedwarsTeam team = BedwarsTeam.getTeam(handler.getTeamManagerModule().getTeam(uuid));
+        if(team != null){
+            this.lastTeam = team;
+        }
+        return this.lastTeam;
     }
 
     /**

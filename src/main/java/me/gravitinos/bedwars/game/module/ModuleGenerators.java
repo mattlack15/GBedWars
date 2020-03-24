@@ -3,16 +3,15 @@ package me.gravitinos.bedwars.game.module;
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.module.gameitems.BedwarsItem;
 import me.gravitinos.bedwars.game.module.generator.Generator;
+import me.gravitinos.bedwars.game.module.generator.GeneratorDrop;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
+import me.gravitinos.bedwars.gamecore.util.HoloTextBox;
 import me.gravitinos.bedwars.gamecore.util.ItemBuilder;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
@@ -23,14 +22,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.UUID;
 
 public class ModuleGenerators extends GameModule {
 
-    private static final double MID_GENERATOR_INTERVAL = 40;
-    private static final double OUTER_GENERATOR_INTERVAL = 20;
-    private static final double BASE_GENERATOR_IRON_INTERVAL = 1.2;
-    private static final double BASE_GENERATOR_GOLD_INTERVAL = 8;
+    private static final double MID_GENERATOR_INTERVAL = 45;
+    private static final double OUTER_GENERATOR_INTERVAL = 30;
+    private static final double BASE_GENERATOR_IRON_INTERVAL = 3;
+    private static final double BASE_GENERATOR_GOLD_INTERVAL = 15;
 
     private boolean enabled = false;
 
@@ -41,86 +39,115 @@ public class ModuleGenerators extends GameModule {
 
         //Mid and outer generators
         for (Location outerGen : outerGens) {
-            generators.add(new Generator(outerGen, ChatColor.AQUA + "Diamond Generator", Objects.requireNonNull(a(BedwarsItem.RESOURCE_DIAMOND.toString())), OUTER_GENERATOR_INTERVAL).setDisplayItem(new ItemStack(Material.DIAMOND_BLOCK)));
+            generators.add(new Generator(this, outerGen, ChatColor.AQUA + "Diamond Generator").setDisplayItem(new ItemStack(Material.DIAMOND_BLOCK))
+                    .addDrop(Objects.requireNonNull(a(BedwarsItem.RESOURCE_DIAMOND.toString())), OUTER_GENERATOR_INTERVAL));
         }
         for (Location midGen : midGens) {
-            generators.add(new Generator(midGen, ChatColor.GREEN + "Emerald Generator", Objects.requireNonNull(a(BedwarsItem.RESOURCE_EMERALD.toString())), MID_GENERATOR_INTERVAL).setDisplayItem(new ItemStack(Material.EMERALD_BLOCK)));
+            generators.add(new Generator(this, midGen, ChatColor.GREEN + "Emerald Generator").setDisplayItem(new ItemStack(Material.EMERALD_BLOCK))
+                    .addDrop(Objects.requireNonNull(a(BedwarsItem.RESOURCE_EMERALD.toString())), MID_GENERATOR_INTERVAL));
         }
 
-        //Stand setup
-        generators.forEach(gen -> {
-            gen.createStand(gen.getName() + " " + ChatColor.YELLOW + Math.round(gen.countdown) + "s");
-            gen.createItem();
-        });
 
         //Base generators
         for (Location baseGen : baseGens) {
-            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Iron", Objects.requireNonNull(a(BedwarsItem.RESOURCE_IRON.toString())), BASE_GENERATOR_IRON_INTERVAL).setMultipleItemGiving(true));
-            generators.add(new Generator(baseGen, ChatColor.GREEN + "Base Generator Gold", Objects.requireNonNull(a(BedwarsItem.RESOURCE_GOLD.toString())), BASE_GENERATOR_GOLD_INTERVAL).setMultipleItemGiving(true));
+            generators.add(new Generator(this, baseGen, ChatColor.GRAY + "Base Generator").setMultipleItemGiving(true)
+                    .addDrop(Objects.requireNonNull(a(BedwarsItem.RESOURCE_IRON.toString())), BASE_GENERATOR_IRON_INTERVAL) //Drop 1 (Iron)
+                    .addDrop(Objects.requireNonNull(a(BedwarsItem.RESOURCE_GOLD.toString())), BASE_GENERATOR_GOLD_INTERVAL)); //Drop 2 (Gold)
+
         }
 
-        //Task interval of 2 ticks or 0.1s
-        new BukkitRunnable(){
+        //Task interval of 1 tick or 0.05s
+        new BukkitRunnable() {
+            int i = 0;
             @Override
             public void run() {
-                if(!enabled){
+                if (!enabled) {
                     return;
+                }
+                if(++i == 12){
+                    i = 0;
                 }
                 for (Generator generator : generators) {
 
-                    //Decrement countdown
-                    generator.countdown-=0.05d;
+                    if(i == 0){
+                        if(generator.getName().equals(ChatColor.GRAY + "Base Generator")){
+                            Location loc = generator.getLocation().clone().add(0.5, 0.2, 0.5);
+                            loc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, loc,2);
+                        } else {
+                            generator.spawnParticles();
+                        }
+                    }
 
-                    //Check if it is time to drop an item
-                    if(generator.countdown <= 0){
-                        generator.countdown = generator.getInterval(); //Reset countdown
-                        generator.dropItem(1); //Drop one
+                    HoloTextBox box = generator.getHoloTextBox();
+                    //Decrement countdown
+                    for (GeneratorDrop drops : generator.getDrops()) {
+                        drops.countdown -= 0.05d;
+
+
+                        //Check if it is time to drop an item
+                        if (drops.countdown <= 0) {
+                            drops.countdown = drops.getInterval(); //Reset countdown
+                            generator.dropItem(generator.getDrops().indexOf(drops), 1); //Drop one
+                        }
+                        box.setLine(generator.getDrops().indexOf(drops), (generator.getDrops().size() > 1 ? new ItemBuilder(drops.getDrop()).getName() + " " : "") + ChatColor.YELLOW + Math.round(drops.countdown) + "s");
                     }
 
                     ArmorStand item = generator.getItem();
-                    if(item != null){
+                    if (item != null) {
                         EulerAngle headPose = item.getHeadPose();
-                        if(headPose.getY() <= 0){
+                        if (headPose.getY() <= 0) {
                             headPose = new EulerAngle(0, Math.toRadians(360), 0);
                         }
-                        headPose = new EulerAngle(0, headPose.getY()-Math.toRadians(5), 0);
+                        headPose = new EulerAngle(0, headPose.getY() - Math.toRadians(5), 0);
                         item.setHeadPose(headPose);
                     }
 
-                    //Set text
-                    generator.setText(generator.getName() + " " + ChatColor.YELLOW + Math.round(generator.countdown) + "s");
                 }
             }
         }.runTaskTimer(CoreHandler.main, 0, 1);
     }
 
-    private ItemStack a(String item){
-        GameItemHandler gameItemHandler = ((BedwarsHandler)this.getGameHandler()).getGameItemsModule().getGameItem(item);
+    private ItemStack a(String item) {
+        GameItemHandler gameItemHandler = ((BedwarsHandler) this.getGameHandler()).getGameItemsModule().getGameItem(item);
         return gameItemHandler != null ? gameItemHandler.getItem(1) : null;
     }
 
-    public ArrayList<Generator> getGenerators(){
+    public ArrayList<Generator> getGenerators() {
         return this.generators;
     }
 
-    public void enable(){
+    public void setup(){
+        //Stand setup
+        generators.forEach(gen -> {
+            if(gen.getName().equals(ChatColor.GRAY + "Base Generator")) return;
+            HoloTextBox box = gen.getHoloTextBox();
+            for (GeneratorDrop drops : gen.getDrops()) {
+                box.addLine(new ItemBuilder(drops.getDrop()).getName() + " " + ChatColor.YELLOW + Math.round(drops.countdown) + "s");
+                gen.dropItem(gen.getDrops().indexOf(drops), 1);
+            }
+            box.addLine(gen.getName());
+            gen.createItem();
+        });
+    }
+
+    public void enable() {
         this.enabled = true;
     }
 
-    public void disable(){
+    public void disable() {
         this.enabled = false;
     }
 
-    public void cleanup(){
+    public void cleanup() {
         generators.forEach(gen -> {
-            gen.removeStand();
+            gen.getHoloTextBox().clear();
             gen.removeItem();
         });
     }
 
-    public void clearGenerators(){
+    public void clearGenerators() {
         generators.forEach(gen -> {
-            gen.removeStand();
+            gen.getHoloTextBox().clear();
             gen.removeItem();
         });
         generators.clear();
@@ -128,26 +155,23 @@ public class ModuleGenerators extends GameModule {
 
     /**
      * Adds a generator
-     * @param generator The generator to add
-     * @param createStand Whether or not to create an armor-stand for holographic text
-     * @param createItem Whether or not to create a display-item
+     *
+     * @param generator   The generator to add
+     * @param createItem  Whether or not to create a display-item
      */
-    public void addGenerator(Generator generator, boolean createStand, boolean createItem){
+    public void addGenerator(Generator generator, boolean createItem) {
         this.generators.add(generator);
-        if(createItem){
+        if (createItem) {
             generator.createItem();
-        }
-        if(createStand){
-            generator.createStand(generator.getName() + " " + ChatColor.YELLOW + Math.round(generator.countdown) + "s");
         }
     }
 
     //Item pickup cancelling
     @EventSubscription
-    private void onPickup(EntityPickupItemEvent event){
-        for(Generator gens : generators){
-            if(gens.getItem() != null){
-                if(gens.getItem().getUniqueId().equals(event.getItem().getUniqueId())){
+    private void onPickup(EntityPickupItemEvent event) {
+        for (Generator gens : generators) {
+            if (gens.getItem() != null) {
+                if (gens.getItem().getUniqueId().equals(event.getItem().getUniqueId())) {
                     event.setCancelled(true);
                     return;
                 }
@@ -156,10 +180,10 @@ public class ModuleGenerators extends GameModule {
     }
 
     @EventSubscription
-    private void onDespawn(ItemDespawnEvent event){
-        for(Generator gens : generators){
-            if(gens.getItem() != null){
-                if(gens.getItem().getUniqueId().equals(event.getEntity().getUniqueId())){
+    private void onDespawn(ItemDespawnEvent event) {
+        for (Generator gens : generators) {
+            if (gens.getItem() != null) {
+                if (gens.getItem().getUniqueId().equals(event.getEntity().getUniqueId())) {
                     event.setCancelled(true);
                     return;
                 }

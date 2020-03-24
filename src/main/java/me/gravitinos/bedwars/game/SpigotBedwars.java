@@ -1,7 +1,9 @@
 package me.gravitinos.bedwars.game;
 
 import com.sk89q.worldedit.regions.CuboidRegion;
+import me.gravitinos.bedwars.anticheat.SpigotAC;
 import me.gravitinos.bedwars.game.command.CommandBW;
+import me.gravitinos.bedwars.game.command.common.CommandParty;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
 import me.gravitinos.bedwars.gamecore.map.MapHandler;
@@ -12,6 +14,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -28,11 +31,20 @@ public class SpigotBedwars extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         instance = this;
+
+        if(!Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")){
+            Bukkit.broadcastMessage(ChatColor.RED + "ProtocolLib must be installed and enabled!");
+        }
+
         new Files();
         new CoreHandler(this);
         this.saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(instance, instance);
         new CommandBW();
+        new CommandParty();
+
+        //Built-In AC
+        new SpigotAC();
     }
 
     @Override
@@ -95,6 +107,13 @@ public class SpigotBedwars extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(AsyncPlayerPreLoginEvent event) {
         BedwarsPlayer.getPlayer(event.getUniqueId());
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event){
+        if(bedwarsHandler != null && bedwarsHandler.isRunning()){
+            bedwarsHandler.addSpectator(event.getPlayer().getUniqueId());
+        }
     }
 
 }

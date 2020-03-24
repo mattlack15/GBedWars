@@ -8,3 +8,9 @@ commands:
   bw:
     description: no description
     usage: /<command>
+  bedwars:
+    description: no description
+    usage: /<command>
+  party:
+    description: no description
+    usage: /<command>

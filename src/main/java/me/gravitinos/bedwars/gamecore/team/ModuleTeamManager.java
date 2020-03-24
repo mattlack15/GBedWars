@@ -3,6 +3,7 @@ package me.gravitinos.bedwars.gamecore.team;
 import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
+import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -11,7 +12,7 @@ public class ModuleTeamManager extends GameModule {
 
     private Map<UUID, String> teamIndex = new HashMap<>();
 
-    public ModuleTeamManager(@NotNull GameHandler gameHandler) {
+    public ModuleTeamManager(GameHandler gameHandler) {
         super(gameHandler, "Team Manager");
     }
 
@@ -68,6 +69,65 @@ public class ModuleTeamManager extends GameModule {
      */
     public void moveFromTo(@NotNull String fromTeam, @NotNull String toTeam) {
         this.teamIndex.replaceAll((p, t) -> fromTeam.equals(t) ? toTeam : t);
+    }
+
+    public void insertParties(@NotNull ArrayList<BaseParty> parties, int teamSize){
+        if (teamSize < 1) {
+            teamSize = 1;
+        }
+
+        Collections.shuffle(parties);
+        int currentTeam = 1;
+        for (BaseParty party : parties) {
+            for(UUID members : party.getMembers()) {
+                String team = currentTeam + "";
+
+                this.setTeam(members, team);
+
+                if (this.getPlayersOnTeam(team).size() >= teamSize) {
+                    currentTeam++;
+                }
+            }
+        }
+    }
+
+    public void insertParties(@NotNull ArrayList<BaseParty> parties, String... teams){
+
+        parties.sort(Comparator.comparingInt(BaseParty::getSize).reversed());
+
+        if(teams.length == 0 || parties.size() == 0){
+            return;
+        }
+
+        int players = 0;
+        for (BaseParty party : parties) {
+            players+=party.getMembers().size();
+        }
+
+        int maxNum = (players-players%teams.length)/teams.length;
+        int exceptions = players%teams.length;
+
+        int currentTeam = 0;
+        for(BaseParty party : parties){
+            for(UUID member : party.getMembers()){
+                if(currentTeam >= teams.length){
+                    currentTeam = 0;
+                }
+                int teamSize = this.getPlayersOnTeam(teams[currentTeam]).size();
+                if(teamSize > maxNum){
+                    currentTeam++;
+                } else if(teamSize == maxNum){
+                    if(exceptions-- <= 0){
+                        currentTeam++;
+                    }
+                }
+                this.setTeam(member, teams[currentTeam]);
+                if(teamSize+1 == maxNum && teamSize+1 == party.getMembers().size()){
+                    currentTeam++;
+                }
+            }
+        }
+
     }
 
     /**

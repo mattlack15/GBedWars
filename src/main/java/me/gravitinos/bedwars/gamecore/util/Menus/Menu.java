@@ -51,8 +51,7 @@ public abstract class Menu {
         return title;
     }
 
-    //private
-    private Inventory buildInventory() {
+    public Inventory buildInventory() {
         Inventory inv = Bukkit.createInventory(null, this.getSize(), title);
         for (int i = 0; i < this.getSize(); i++) {
             MenuElement e = this.getElement(i);
@@ -77,14 +76,23 @@ public abstract class Menu {
         Inventory inv = this.buildInventory();
         InvInfo info = new InvInfo(inv, this, data);
 
+        InvInfo pastInfo = MenuManager.instance.getInfo(p.getUniqueId());
+
         //For immediate effect
         MenuManager.instance.addMenu(this); //Make sure this menu is added to the list
         MenuManager.instance.setInfo(p.getUniqueId(), info);
         doInMainThread(() -> {
             //To make sure it is set when the inv is opened
-            MenuManager.instance.addMenu(this); //Make sure this menu is added to the list
-            MenuManager.instance.setInfo(p.getUniqueId(), info);
-            p.openInventory(inv);
+            if(pastInfo != null && pastInfo.getCurrentInv() != null){
+                pastInfo.getCurrentInv().setContents(inv.getContents());
+                info.setCurrentInv(pastInfo.getCurrentInv());
+                MenuManager.instance.addMenu(this); //Make sure this menu is added to the list
+                MenuManager.instance.setInfo(p.getUniqueId(), info);
+            } else {
+                p.openInventory(inv);
+                MenuManager.instance.addMenu(this); //Make sure this menu is added to the list
+                MenuManager.instance.setInfo(p.getUniqueId(), info);
+            }
         });
     }
 

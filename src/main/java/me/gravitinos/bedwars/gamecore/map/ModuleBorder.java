@@ -1,4 +1,4 @@
-package me.gravitinos.bedwars.game.module;
+package me.gravitinos.bedwars.gamecore.map;
 
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.regions.CuboidRegion;
@@ -21,31 +21,35 @@ import java.util.function.Consumer;
 
 public class ModuleBorder extends GameModule {
 
-    public ModuleBorder(@NotNull GameHandler gameHandler, @NotNull CuboidRegion region) {
+    /**
+     * @param gameHandler Game Handler
+     * @param region Map Region (WorldEdit Region)
+     * @param action (Action to do when player is found outside border
+     */
+    public ModuleBorder(@NotNull GameHandler gameHandler, @NotNull CuboidRegion region, Consumer<Player> action) {
         super(gameHandler, "BORDER");
         new BukkitRunnable(){
             @Override
             public void run() {
                 for(UUID players : getGameHandler().getPlayers()){
                     Player player = Bukkit.getPlayer(players);
+                    if(region == null || player == null){
+                        return;
+                    }
                     if(!region.contains(new Vector(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ()))){
-                        ((BedwarsHandler)getGameHandler()).killPlayer(players, "Border");
+                        action.accept(player);
                     }
                 }
                 for(UUID spectators : getGameHandler().getSpectators()){
                     Player player = Bukkit.getPlayer(spectators);
                     if(!region.contains(new Vector(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ()))){
-                        ArrayList<Location> midGens = ((BedwarsHandler)getGameHandler()).getPointTracker().getMidGens();
-                        if(midGens.size() > 0){
-                            player.teleport(midGens.get(0), PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
-                        } else {
-                            player.teleport(new Location(Bukkit.getWorld(Objects.requireNonNull(region.getWorld()).getName()), region.getCenter().getX(), region.getCenter().getY(), region.getCenter().getZ()), PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
-                        }
+                        action.accept(player);
                     }
                 }
             }
         }.runTaskTimer(CoreHandler.main, 0, 2);
     }
+
 
 
 }

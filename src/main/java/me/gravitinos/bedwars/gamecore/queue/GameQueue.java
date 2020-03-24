@@ -3,6 +3,7 @@ package me.gravitinos.bedwars.gamecore.queue;
 import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.util.ActionBar;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
@@ -21,12 +22,12 @@ public class GameQueue {
     private double timeLeftSeconds;
     private boolean running = false;
     private double originalTimeSeconds;
-    private ArrayList<UUID> queued = new ArrayList<>();
+    private ArrayList<BaseParty> queued = new ArrayList<>();
     private GameHandler game;
     private int maxNumQueued = 30;
     private boolean showActionBar = true;
 
-    private static WeakList<GameQueue> queues = new WeakList<>();
+    private static ArrayList<GameQueue> queues = new ArrayList<>();
 
     private String actionBarMessage = "";
 
@@ -42,7 +43,7 @@ public class GameQueue {
                             queues.end();
                         } else if(queues.showActionBar){
                             ActionBar.sendAll(queues.actionBarMessage.replace("<timeLeftSeconds>", (Math.round(queues.timeLeftSeconds*10d)/10d) + "")
-                            .replace("<numQueued>", queues.queued.size() + "")
+                            .replace("<numQueued>", queues.getNumPlayersQueued() + "")
                             .replace("<maxQueued>", queues.maxNumQueued + ""));
                         }
                     }
@@ -84,7 +85,7 @@ public class GameQueue {
         this.showActionBar = showActionBar;
     }
 
-    public ArrayList<UUID> getQueued() {
+    public ArrayList<BaseParty> getQueued() {
         return Lists.newArrayList(queued);
     }
 
@@ -131,6 +132,42 @@ public class GameQueue {
     }
 
     /**
+     * Gets all the queued players
+     * @return List of queued players
+     */
+    public ArrayList<UUID> getPlayersQueued(){
+        ArrayList<UUID> players = new ArrayList<>();
+        this.queued.forEach(p -> players.addAll(p.getMembers()));
+        return players;
+    }
+
+    /**
+     * Get the amount of players queued
+     * @return The amount of players queued
+     */
+    public int getNumPlayersQueued(){
+        int num = 0;
+        for (BaseParty party : this.queued) {
+            num += party.getMembers().size();
+        }
+        return num;
+    }
+
+    /**
+     * Checks if a player is queued
+     * @param playerUUID The UUID of the player to check for
+     * @return The result
+     */
+    public boolean isPlayerQueued(UUID playerUUID){
+        for(BaseParty parties : Lists.newArrayList(this.queued)){
+            if(parties.getMembers().contains(playerUUID)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Resets time to original value
      */
     public void resetTime(){
@@ -146,33 +183,42 @@ public class GameQueue {
     }
 
     /**
-     * Queues a player in this queue
-     * @param player The player to queue
-     * @return Whether the player was queued or not, may return false if the player is already queued or the player is not online
+     * Queues a party in this queue
+     * @param party The party to queue
+     * @return Whether the party was queued or not, may return false if the party is already queued
      */
-    public boolean queuePlayer(UUID player){
-        if(this.queued.contains(player) || Bukkit.getPlayer(player) == null){
+    public boolean queueParty(BaseParty party){
+        if(this.queued.contains(party)){
             return false;
         }
-        this.queued.add(player);
+        this.queued.add(party);
         return true;
     }
 
     /**
-     * Un-queues a player from this queue
-     * @param player The player to un-queue
+     * Un-queues a party from this queue
+     * @param partyId The id of the party to un-queue
      */
-    public void unQueuePlayer(UUID player){
-        this.queued.remove(player);
+    public void unQueueParty(@NotNull UUID partyId){
+        for(BaseParty parties : Lists.newArrayList(this.queued)){
+            if(parties.getPartyId().equals(partyId)){
+                this.queued.remove(parties);
+            }
+        }
     }
 
     /**
-     * Checks if a player is currently queued in this queue
-     * @param player The player to check for
-     * @return Whether the player is queued or not
+     * Checks if a party is currently queued in this queue
+     * @param partyId The id of the party to check for
+     * @return Whether the party is queued or not
      */
-    public boolean isPlayerQueued(UUID player){
-        return this.queued.contains(player);
+    public boolean isPartyQueued(UUID partyId){
+        for(BaseParty parties : Lists.newArrayList(this.queued)){
+            if(parties.getPartyId().equals(partyId)){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -203,14 +249,21 @@ public class GameQueue {
     public void end(){
         this.running = false;
         this.timeLeftSeconds = this.originalTimeSeconds;
-        ArrayList<UUID> q = Lists.newArrayList(queued);
+        ArrayList<BaseParty> q = Lists.newArrayList(queued);
         CoreHandler.doInMainThread(() -> game.start(q));
         this.queued.clear();
     }
 
     @EventSubscription
     private void onLeave(PlayerQuitEvent event){
-        this.unQueuePlayer(event.getPlayer().getUniqueId());
+        for (BaseParty party : Lists.newArrayList(this.queued)) {
+            if(!party.getMembers().contains(event.getPlayer().getUniqueId())){
+                continue;
+            }
+            if(party.isOnePersonParty()){
+                this.unQueueParty(party.getPartyId());
+            }
+        }
     }
 
 }

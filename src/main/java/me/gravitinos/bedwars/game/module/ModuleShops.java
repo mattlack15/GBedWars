@@ -5,6 +5,7 @@ import me.gravitinos.bedwars.game.module.shop.Shop;
 import me.gravitinos.bedwars.gamecore.handler.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -23,6 +24,14 @@ public class ModuleShops extends GameModule {
         Location mid = null;
         if(((BedwarsHandler)gameHandler).getPointTracker().getMidGens().size() > 0){
             mid = ((BedwarsHandler)gameHandler).getPointTracker().getMidGens().get(0);
+        }
+        Location finalMid = mid;
+    }
+
+    public void setup(){
+        Location mid = null;
+        if(((BedwarsHandler)getGameHandler()).getPointTracker().getMidGens().size() > 0){
+            mid = ((BedwarsHandler)getGameHandler()).getPointTracker().getMidGens().get(0);
         }
         Location finalMid = mid;
         this.shops.forEach(s -> s.createEntity(finalMid));

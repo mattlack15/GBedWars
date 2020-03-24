@@ -1,15 +1,11 @@
 package me.gravitinos.bedwars.gamecore;
 
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
-import me.gravitinos.bedwars.gamecore.queue.GameQueue;
-import me.gravitinos.bedwars.gamecore.util.EventSubscription;
+import me.gravitinos.bedwars.gamecore.channel.ProxyComm;
+import me.gravitinos.bedwars.gamecore.party.PartyComm;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
 import me.gravitinos.bedwars.gamecore.util.Menus.Menu;
 import me.gravitinos.bedwars.gamecore.util.Menus.MenuManager;
 import org.bukkit.Bukkit;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -49,6 +45,8 @@ public class CoreHandler {
         main = mainPlugin;
         new EventSubscriptions();
         new MenuManager();
+        new ProxyComm();
+        new PartyComm();
         EventSubscriptions.instance.subscribe(this);
     }
 }

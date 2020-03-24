@@ -1,20 +1,19 @@
 package me.gravitinos.bedwars.game.command.admin;
 
 import me.gravitinos.bedwars.game.BedwarsHandler;
-import me.gravitinos.bedwars.game.BedwarsTeam;
 import me.gravitinos.bedwars.game.SpigotBedwars;
 import me.gravitinos.bedwars.game.command.GravCommandPermissionable;
 import me.gravitinos.bedwars.game.command.GravSubCommand;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.party.BaseParty;
+import me.gravitinos.bedwars.gamecore.party.BungeeParty;
+import me.gravitinos.bedwars.gamecore.party.BungeePartyFactory;
 import me.gravitinos.bedwars.gamecore.queue.GameQueue;
-import me.gravitinos.bedwars.gamecore.util.WeakList;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 
 public class CommandStart extends GravSubCommand {
     public CommandStart(GravCommandPermissionable parentCommand, String cmdPath) {
@@ -65,6 +64,10 @@ public class CommandStart extends GravSubCommand {
         }
 
         if((SpigotBedwars.bedwarsHandler != null && SpigotBedwars.bedwarsHandler.isRunning()) || (SpigotBedwars.queue != null && SpigotBedwars.queue.isRunning())){
+            if(SpigotBedwars.queue != null && SpigotBedwars.queue.isRunning()){
+                SpigotBedwars.queue.end();
+                return sendErrorMessage(sender, SpigotBedwars.PLUGIN_PREFIX + "Game force started!");
+            }
             return sendErrorMessage(sender, SpigotBedwars.PLUGIN_PREFIX + "Game or Queue is already running, stop the game first");
         }
 
@@ -73,10 +76,12 @@ public class CommandStart extends GravSubCommand {
         queue.setShowActionBar(true);
         queue.setActionBarMessage("&cBed wars starting in &f<timeLeftSeconds> seconds &7- &e<numQueued>/<maxQueued>");
         queue.start();
-        Bukkit.getOnlinePlayers().forEach(p -> {
-            queue.queuePlayer(p.getUniqueId());
-            p.playSound(p.getLocation(), Sound.BLOCK_NOTE_PLING, 10f, 1f);
-        });
+        synchronized (BungeePartyFactory.class) {
+            Bukkit.getOnlinePlayers().forEach(p -> {
+                queue.queueParty(BungeePartyFactory.getPartyOf(p.getUniqueId()));
+                p.playSound(p.getLocation(), Sound.BLOCK_NOTE_PLING, 10f, 1f);
+            });
+        }
 
         SpigotBedwars.queue = queue;
 

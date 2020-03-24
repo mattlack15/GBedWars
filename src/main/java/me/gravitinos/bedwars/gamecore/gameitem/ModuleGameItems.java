@@ -24,6 +24,15 @@ public class ModuleGameItems extends GameModule {
         return Lists.newArrayList(this.handlers);
     }
 
+    public <T extends GameItemHandler> T getGameItem(Class<T> classType){
+        for(GameItemHandler handler : handlers){
+            if(classType.isAssignableFrom(handler.getClass())){
+                return (T) handler;
+            }
+        }
+        return null;
+    }
+
     public GameItemHandler getGameItem(String name){
         for(GameItemHandler handler : handlers){
             if(handler.getName().equals(name)){

@@ -44,6 +44,10 @@ public class HideUtil {
         HideUtil.hidden.add(p.getUniqueId());
     }
 
+    public static boolean isHidden(@NotNull UUID player){
+        return hidden.contains(player);
+    }
+
     public static void hidePlayer(@NotNull Player p){
         Bukkit.getOnlinePlayers().forEach(ps -> ps.hidePlayer(p));
         HideUtil.hidden.add(p.getUniqueId());

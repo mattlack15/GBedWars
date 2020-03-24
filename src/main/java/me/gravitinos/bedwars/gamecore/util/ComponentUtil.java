@@ -14,13 +14,13 @@ import java.util.ArrayList;
 public class ComponentUtil {
 	@NotNull
 	public static TextComponent getClickHoverComponent(String text, @NotNull String hover, ClickEvent.Action ac, String click) {
-		TextComponent component = new TextComponent(TextComponent.fromLegacyText(text));
-		String[] description = hover.split("<nl>");
+		TextComponent component = new TextComponent(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', text)));
+		String[] description = hover.split("\\\\n");
 		TextComponent newLine = new TextComponent(ComponentSerializer.parse("{text: \"\n\"}"));
 		TextComponent hover1 = new TextComponent(ComponentUtil.toColor(description[0]));
 		for(int i = 1; i < description.length; i++) {
 			hover1.addExtra(newLine);
-			hover1.addExtra(new TextComponent(TextComponent.fromLegacyText(ComponentUtil.toColor(description[i]))));
+			hover1.addExtra(new TextComponent(TextComponent.fromLegacyText(ComponentUtil.toColor(ChatColor.translateAlternateColorCodes('&', description[i])))));
 		}
 		ArrayList<TextComponent> components = new ArrayList<>();
 		components.add(hover1);
@@ -35,7 +35,7 @@ public class ComponentUtil {
 	 * @return Text Component
 	 */
 	public static TextComponent toComponent(String text) {
-		return new TextComponent(TextComponent.fromLegacyText(text));
+		return new TextComponent(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', text)));
 	}
 
 	/**
