@@ -101,7 +101,7 @@ public class ModuleDamageHandler extends GameModule {
                 }
             }
             if (leather > 2) {
-                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 1f, 1.5f);
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1.6f);
             } else if (leather + none <= 2) {
                 player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 1f,1.5f);
             }
