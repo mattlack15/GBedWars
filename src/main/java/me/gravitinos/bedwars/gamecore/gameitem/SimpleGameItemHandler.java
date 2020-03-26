@@ -31,20 +31,6 @@ public abstract class SimpleGameItemHandler extends GameItemHandler {
         super(module, name);
     }
 
-    @Override
-    protected void enable() {
-        this.enabled = true;
-    }
-
-    @Override
-    protected void disable() {
-        this.enabled = false;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return this.enabled;
-    }
 
     @Override
     public boolean isMatch(@NotNull ItemStack stack) {

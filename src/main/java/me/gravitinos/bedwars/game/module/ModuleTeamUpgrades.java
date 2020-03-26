@@ -24,16 +24,31 @@ public class ModuleTeamUpgrades extends GameModule {
     //Also handles invisibility
     private Map<UUID, Boolean> hidden = new HashMap<>();
 
+    private BedwarsHandler gameHandler;
     public ModuleTeamUpgrades(BedwarsHandler gameHandler) {
         super(gameHandler, "TEAM_UPGRADES");
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
+        this.gameHandler = gameHandler;
+    }
 
-                for (UUID players : gameHandler.getTeamManagerModule().getPlayers()) {
-                    Player p = Bukkit.getPlayer(players);
-                    if (p == null) continue;
+    @Override
+    public void enable() {
+        super.enable();
+        runnable.runTaskTimer(CoreHandler.main, 0, 5);
+    }
+
+    public void disable(){
+        super.disable();
+        runnable.cancel();
+    }
+
+    private BukkitRunnable runnable = new BukkitRunnable() {
+        @Override
+        public void run() {
+
+            for (UUID players : gameHandler.getTeamManagerModule().getPlayers()) {
+                Player p = Bukkit.getPlayer(players);
+                if (p == null) continue;
 
 //                    if (p.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
 //                        if (!hidden.containsKey(p.getUniqueId())) {
@@ -47,54 +62,53 @@ public class ModuleTeamUpgrades extends GameModule {
 //                        }
 //                        hidden.remove(p.getUniqueId());
 //                    }
-                }
+            }
 
-                for (BedwarsTeam team : BedwarsTeam.values()) {
-                    BWTeamInfo info = gameHandler.getTeamInfo(team);
+            for (BedwarsTeam team : BedwarsTeam.values()) {
+                BWTeamInfo info = gameHandler.getTeamInfo(team);
 
-                    gameHandler.getTeamManagerModule().getPlayersOnTeam(team.toString()).forEach(tm -> {
-                        Player p = Bukkit.getPlayer(tm);
-                        if (info.getTeamUpdradeLevel(TeamUpgrade.PROTECTION) > 0) {
-                            int level = info.getTeamUpdradeLevel(TeamUpgrade.PROTECTION);
-                            if (p != null) {
-                                ItemStack[] armorContents = p.getInventory().getArmorContents();
+                gameHandler.getTeamManagerModule().getPlayersOnTeam(team.toString()).forEach(tm -> {
+                    Player p = Bukkit.getPlayer(tm);
+                    if (info.getTeamUpdradeLevel(TeamUpgrade.PROTECTION) > 0) {
+                        int level = info.getTeamUpdradeLevel(TeamUpgrade.PROTECTION);
+                        if (p != null) {
+                            ItemStack[] armorContents = p.getInventory().getArmorContents();
 
-                                for (ItemStack stack : armorContents) {
-                                    if (stack == null) continue;
-                                    stack.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, level);
-                                }
-                                p.getInventory().setArmorContents(armorContents);
+                            for (ItemStack stack : armorContents) {
+                                if (stack == null) continue;
+                                stack.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, level);
                             }
+                            p.getInventory().setArmorContents(armorContents);
                         }
+                    }
 
 
-                        if (info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS) > 0) {
-                            int level = info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS);
-                            if (p != null) {
-                                ItemStack[] contents = p.getInventory().getStorageContents();
+                    if (info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS) > 0) {
+                        int level = info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS);
+                        if (p != null) {
+                            ItemStack[] contents = p.getInventory().getStorageContents();
 
-                                for (ItemStack stack : contents) {
-                                    if (stack == null) continue;
-                                    if (!stack.containsEnchantment(Enchantment.DAMAGE_ALL) || stack.getEnchantmentLevel(Enchantment.DAMAGE_ALL) != level) {
-                                        if (Enchantment.DAMAGE_ALL.canEnchantItem(stack)) {
-                                            stack = p.getInventory().getItem(p.getInventory().first(stack));
-                                            stack.addEnchantment(Enchantment.DAMAGE_ALL, level);
-                                        }
+                            for (ItemStack stack : contents) {
+                                if (stack == null) continue;
+                                if (!stack.containsEnchantment(Enchantment.DAMAGE_ALL) || stack.getEnchantmentLevel(Enchantment.DAMAGE_ALL) != level) {
+                                    if (Enchantment.DAMAGE_ALL.canEnchantItem(stack)) {
+                                        stack = p.getInventory().getItem(p.getInventory().first(stack));
+                                        stack.addEnchantment(Enchantment.DAMAGE_ALL, level);
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (info.getTeamUpdradeLevel(TeamUpgrade.HASTE) > 0) {
-                            int level = info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS);
-                            if (p != null)
-                                p.addPotionEffect(new PotionEffect(PotionEffectType.FAST_DIGGING, 40, level, true, false));
-                        }
-                    });
-                }
+                    if (info.getTeamUpdradeLevel(TeamUpgrade.HASTE) > 0) {
+                        int level = info.getTeamUpdradeLevel(TeamUpgrade.SHARPNESS);
+                        if (p != null)
+                            p.addPotionEffect(new PotionEffect(PotionEffectType.FAST_DIGGING, 40, level, true, false));
+                    }
+                });
             }
-        }.runTaskTimer(CoreHandler.main, 0, 5);
-    }
+        }
+    };
 
 
 }

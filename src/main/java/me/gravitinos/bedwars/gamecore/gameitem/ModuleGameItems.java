@@ -1,7 +1,7 @@
 package me.gravitinos.bedwars.gamecore.gameitem;
 
 import com.google.common.collect.Lists;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,6 +31,16 @@ public class ModuleGameItems extends GameModule {
             }
         }
         return null;
+    }
+
+    public void enable(){
+        super.enable();
+        this.enableAllGameItems();
+    }
+
+    public void disable(){
+        super.disable();
+        this.disableAllGameItems();
     }
 
     public GameItemHandler getGameItem(String name){

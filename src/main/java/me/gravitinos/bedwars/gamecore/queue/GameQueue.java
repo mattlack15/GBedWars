@@ -2,12 +2,11 @@ package me.gravitinos.bedwars.gamecore.queue;
 
 import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.util.ActionBar;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
-import me.gravitinos.bedwars.gamecore.util.WeakList;
 import org.bukkit.Bukkit;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;

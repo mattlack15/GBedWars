@@ -71,7 +71,12 @@ public class CommandStart extends GravSubCommand {
             return sendErrorMessage(sender, SpigotBedwars.PLUGIN_PREFIX + "Game or Queue is already running, stop the game first");
         }
 
-        SpigotBedwars.bedwarsHandler = new BedwarsHandler(mapFile);
+        if(SpigotBedwars.bedwarsHandler != null){
+            SpigotBedwars.bedwarsHandler.setMap(mapFile);
+        } else {
+            SpigotBedwars.bedwarsHandler = new BedwarsHandler(mapFile);
+        }
+
         GameQueue queue = new GameQueue(SpigotBedwars.bedwarsHandler, 10);
         queue.setShowActionBar(true);
         queue.setActionBarMessage("&cBed wars starting in &f<timeLeftSeconds> seconds &7- &e<numQueued>/<maxQueued>");

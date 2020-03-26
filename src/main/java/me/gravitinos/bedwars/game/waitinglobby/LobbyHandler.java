@@ -1,7 +1,7 @@
 package me.gravitinos.bedwars.game.waitinglobby;
 
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameStopReason;
 import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.scoreboard.ModuleScoreboard;
 import me.gravitinos.bedwars.gamecore.scoreboard.SBScope;

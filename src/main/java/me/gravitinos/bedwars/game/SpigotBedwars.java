@@ -5,7 +5,7 @@ import me.gravitinos.bedwars.anticheat.SpigotAC;
 import me.gravitinos.bedwars.game.command.CommandBW;
 import me.gravitinos.bedwars.game.command.common.CommandParty;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
+import me.gravitinos.bedwars.gamecore.module.GameStopReason;
 import me.gravitinos.bedwars.gamecore.map.MapHandler;
 import me.gravitinos.bedwars.gamecore.queue.GameQueue;
 import me.gravitinos.bedwars.gamecore.util.SyncProgressReport;
@@ -15,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -52,6 +53,7 @@ public class SpigotBedwars extends JavaPlugin implements Listener {
         if (bedwarsHandler != null) {
             bedwarsHandler.stop("Disabled", GameStopReason.GAME_END);
         }
+        Bukkit.getScheduler().cancelTasks(this);
     }
 
     public ArrayList<File> getMapFiles() {

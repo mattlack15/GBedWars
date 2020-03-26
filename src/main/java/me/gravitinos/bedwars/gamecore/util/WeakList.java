@@ -61,7 +61,7 @@ public class WeakList<T> extends ArrayList<T> {
     public boolean contains(Object item){
         removeReleased();
         for(WeakReference<T> references : this.items){
-            if((references.get() == null ? item == null : item.equals(references.get()))){
+            if((item == null ? references.get() == null : item.equals(references.get()))){
                 return true;
             }
         }
@@ -86,6 +86,25 @@ public class WeakList<T> extends ArrayList<T> {
                 i--;
             }
         }
+    }
+
+    public boolean remove(Object o){
+        if(!this.contains(o)){
+            return false;
+        }
+
+        this.items.removeIf(ref -> o == null ? ref.get() == null : o.equals(ref.get()));
+
+        return true;
+    }
+
+    public T remove(int index){
+        if(index >= this.size()){
+            throw new IndexOutOfBoundsException();
+        }
+        T t = this.get(index);
+        this.items.remove(index);
+        return t;
     }
 
     private class WeakListIterator implements Iterator<T> {

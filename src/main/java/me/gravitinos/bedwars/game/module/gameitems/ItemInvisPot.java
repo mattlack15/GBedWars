@@ -1,5 +1,12 @@
 package me.gravitinos.bedwars.game.module.gameitems;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.EnumWrappers;
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.info.BWPlayerInfo;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
@@ -8,7 +15,6 @@ import me.gravitinos.bedwars.gamecore.gameitem.SimpleGameItemHandler;
 import me.gravitinos.bedwars.gamecore.scoreboard.ModuleScoreboard;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.ItemBuilder;
-import me.gravitinos.bedwars.gamecore.util.PacketEvent;
 import me.gravitinos.bedwars.gamecore.util.TextUtil;
 import net.minecraft.server.v1_12_R1.EnumItemSlot;
 import net.minecraft.server.v1_12_R1.PacketPlayOutEntityEquipment;
@@ -31,6 +37,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -44,6 +51,9 @@ public class ItemInvisPot extends SimpleGameItemHandler {
     private ArrayList<Integer> invisibleEID = new ArrayList<>();
 
     public void removeInvisible(@NotNull Player p) {
+        if(!this.isEnabled()){
+            return;
+        }
         p.removePotionEffect(PotionEffectType.INVISIBILITY);
         this.restoreArmor(p);
 
@@ -56,6 +66,9 @@ public class ItemInvisPot extends SimpleGameItemHandler {
     }
 
     public void setInvisible(@NotNull Player player, int durationSeconds) {
+        if(!this.isEnabled()){
+            return;
+        }
         player.removePotionEffect(PotionEffectType.INVISIBILITY);
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY,durationSeconds * 20,0,false,false));
         this.invisibleEID.add(player.getEntityId());
@@ -119,69 +132,117 @@ public class ItemInvisPot extends SimpleGameItemHandler {
         }
     }
 
-    @EventSubscription
-    private void onPacketEquipment(PacketEvent<PacketPlayOutEntityEquipment> event) {
-        PacketPlayOutEntityEquipment entityEquipment = event.getPacket();
-        try {
+    private PacketAdapter packetAdapter = new PacketAdapter(CoreHandler.main, PacketType.Play.Server.ENTITY_EQUIPMENT) {
+        @Override
+        public void onPacketSending(PacketEvent event) {
+            if(!event.getPacketType().equals(PacketType.Play.Server.ENTITY_EQUIPMENT))
+                return;
 
-            Field EID = entityEquipment.getClass().getDeclaredField("a");
-            EID.setAccessible(true);
-            int id = (int)EID.get(entityEquipment);
-            EID.setAccessible(false);
+            int id = event.getPacket().getIntegers().read(0);
 
-            if(!this.invisibleEID.contains(id)){
+            if(!invisibleEID.contains(id)){
                 return;
             }
 
-            Field slotField = entityEquipment.getClass().getDeclaredField("b");
-            slotField.setAccessible(true);
-            Enum slot = (Enum) slotField.get(entityEquipment);
-            slotField.setAccessible(false);
+            EnumWrappers.ItemSlot slot = event.getPacket().getItemSlots().read(0);
 
             if (slot.ordinal() < 2) {
                 return;
             }
 
-            Field field = entityEquipment.getClass().getDeclaredField("c");
-            field.setAccessible(true);
-            field.set(entityEquipment, CraftItemStack.asNMSCopy(null));
-            field.setAccessible(false);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            e.printStackTrace();
+            event.getPacket().getItemModifier().write(0, null);
         }
+    };
+
+    @Override
+    public void enable(){
+        super.enable();
+        ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+        pm.addPacketListener(packetAdapter);
+    }
+
+    @Override
+    protected void disable() {
+        super.disable();
+        ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+        pm.removePacketListener(packetAdapter);
     }
 
     public void sendPacketNoArmor(Player p) {
-        PacketPlayOutEntityEquipment equipmentFeet = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.FEET, CraftItemStack.asNMSCopy(null));
-        PacketPlayOutEntityEquipment equipmentLegs = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.LEGS, CraftItemStack.asNMSCopy(null));
-        PacketPlayOutEntityEquipment equipmentChest = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.CHEST, CraftItemStack.asNMSCopy(null));
-        PacketPlayOutEntityEquipment equipmentHead = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.HEAD, CraftItemStack.asNMSCopy(null));
+
+        ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+
+        PacketContainer pc = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc.getIntegers().write(0, p.getEntityId());
+        pc.getItemSlots().write(0, EnumWrappers.ItemSlot.FEET);
+        pc.getItemModifier().write(0, null);
+
+        PacketContainer pc1 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc1.getIntegers().write(0, p.getEntityId());
+        pc1.getItemSlots().write(0, EnumWrappers.ItemSlot.LEGS);
+        pc1.getItemModifier().write(0, null);
+
+        PacketContainer pc2 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc2.getIntegers().write(0, p.getEntityId());
+        pc2.getItemSlots().write(0, EnumWrappers.ItemSlot.CHEST);
+        pc2.getItemModifier().write(0, null);
+
+        PacketContainer pc3 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc3.getIntegers().write(0, p.getEntityId());
+        pc3.getItemSlots().write(0, EnumWrappers.ItemSlot.HEAD);
+        pc3.getItemModifier().write(0, null);
 
         for (Player players : Bukkit.getOnlinePlayers()) {
 
             if (players.getUniqueId().equals(p.getUniqueId())) continue;
 
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentFeet);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentLegs);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentChest);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentHead);
+            try {
+                pm.sendServerPacket(players, pc);
+                pm.sendServerPacket(players, pc1);
+                pm.sendServerPacket(players, pc2);
+                pm.sendServerPacket(players, pc3);
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public void restoreArmor(Player p) {
-        PacketPlayOutEntityEquipment equipmentFeet = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.FEET, CraftItemStack.asNMSCopy(p.getInventory().getBoots()));
-        PacketPlayOutEntityEquipment equipmentLegs = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.LEGS, CraftItemStack.asNMSCopy(p.getInventory().getLeggings()));
-        PacketPlayOutEntityEquipment equipmentChest = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.CHEST, CraftItemStack.asNMSCopy(p.getInventory().getChestplate()));
-        PacketPlayOutEntityEquipment equipmentHead = new PacketPlayOutEntityEquipment(p.getEntityId(), EnumItemSlot.HEAD, CraftItemStack.asNMSCopy(p.getInventory().getHelmet()));
+
+        ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+
+        PacketContainer pc = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc.getIntegers().write(0, p.getEntityId());
+        pc.getItemSlots().write(0, EnumWrappers.ItemSlot.FEET);
+        pc.getItemModifier().write(0, p.getInventory().getBoots());
+
+        PacketContainer pc1 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc1.getIntegers().write(0, p.getEntityId());
+        pc1.getItemSlots().write(0, EnumWrappers.ItemSlot.LEGS);
+        pc1.getItemModifier().write(0, p.getInventory().getLeggings());
+
+        PacketContainer pc2 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc2.getIntegers().write(0, p.getEntityId());
+        pc2.getItemSlots().write(0, EnumWrappers.ItemSlot.CHEST);
+        pc2.getItemModifier().write(0, p.getInventory().getChestplate());
+
+        PacketContainer pc3 = pm.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT);
+        pc3.getIntegers().write(0, p.getEntityId());
+        pc3.getItemSlots().write(0, EnumWrappers.ItemSlot.HEAD);
+        pc3.getItemModifier().write(0, p.getInventory().getHelmet());
 
         for (Player players : Bukkit.getOnlinePlayers()) {
 
             if (players.getUniqueId().equals(p.getUniqueId())) continue;
 
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentFeet);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentLegs);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentChest);
-            ((CraftPlayer) players).getHandle().playerConnection.sendPacket(equipmentHead);
+            try {
+                pm.sendServerPacket(players, pc);
+                pm.sendServerPacket(players, pc1);
+                pm.sendServerPacket(players, pc2);
+                pm.sendServerPacket(players, pc3);
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

@@ -1,10 +1,7 @@
 package me.gravitinos.bedwars.game.command;
 
 import me.gravitinos.bedwars.game.SpigotBedwars;
-import me.gravitinos.bedwars.game.command.admin.CommandAC;
-import me.gravitinos.bedwars.game.command.admin.CommandOpenControl;
-import me.gravitinos.bedwars.game.command.admin.CommandStart;
-import me.gravitinos.bedwars.game.command.admin.CommandStop;
+import me.gravitinos.bedwars.game.command.admin.*;
 import me.gravitinos.bedwars.game.command.configure.CommandCreateMap;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -20,6 +17,7 @@ public class CommandBW extends GravCommand {
         this.addSubCommand(new CommandStop(this, this.getSubCommandCmdPath()));
         this.addSubCommand(new CommandOpenControl(this, this.getSubCommandCmdPath()));
         this.addSubCommand(new CommandAC(this, this.getSubCommandCmdPath()));
+        this.addSubCommand(new CommandListModules(this, this.getSubCommandCmdPath()));
 
     }
 

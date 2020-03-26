@@ -151,27 +151,27 @@ public class ScaffoldA extends Check {
 
     public ScaffoldA(Profile profile) {
         super(profile, "Scaffold A", CheckType.PACKET, AlertType.ALL_STAFF, PunishType.EXPERIMENTAL);
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if(!ScaffoldA.this.isEnabled()){
-                    return;
-                }
-                Player p = getProfile().getPlayer();
-                if (p != null) {
-                    synchronized (ScaffoldA.this) {
-                        String msg = "";
-                        msg += "&bTraining: &e" + (Math.round(percentageTrainingDone * 1000) / 10f) + "% ";
-                        msg += "&6Examples(&3" + (learningFrom ? isHacking : "N/A") + "&6): &e" + trainingSet.size();
-                        msg += " ";
-                        msg += "&aProb. Legit: &e" + Math.round(lastval1 * 100);
-                        msg += " ";
-                        msg += "&cProb. Hacking: &e" + Math.round(lastval2 * 100);
-                        ActionBar.send(p, ChatColor.translateAlternateColorCodes('&', msg));
-                    }
-                }
-            }
-        }.runTaskTimerAsynchronously(CoreHandler.main, 0, 4);
+//        new BukkitRunnable() {
+//            @Override
+//            public void run() {
+//                if(!ScaffoldA.this.isEnabled()){
+//                    return;
+//                }
+//                Player p = getProfile().getPlayer();
+//                if (p != null) {
+//                    synchronized (ScaffoldA.this) {
+//                        String msg = "";
+//                        msg += "&bTraining: &e" + (Math.round(percentageTrainingDone * 1000) / 10f) + "% ";
+//                        msg += "&6Examples(&3" + (learningFrom ? isHacking : "N/A") + "&6): &e" + trainingSet.size();
+//                        msg += " ";
+//                        msg += "&aProb. Legit: &e" + Math.round(lastval1 * 100);
+//                        msg += " ";
+//                        msg += "&cProb. Hacking: &e" + Math.round(lastval2 * 100);
+//                        ActionBar.send(p, ChatColor.translateAlternateColorCodes('&', msg));
+//                    }
+//                }
+//            }
+//        }.runTaskTimerAsynchronously(CoreHandler.main, 0, 4);
     }
 
     @EventSubscription

@@ -2,7 +2,9 @@ package me.gravitinos.bedwars.game.module.shop;
 
 import me.gravitinos.bedwars.game.info.BWPlayerInfo;
 import me.gravitinos.bedwars.game.module.shop.shopitems.armour.ShopItemPermanentArmour;
+import me.gravitinos.bedwars.game.module.shop.shopitems.blocks.*;
 import me.gravitinos.bedwars.game.module.shop.shopitems.mining.ShopItemPickaxe;
+import me.gravitinos.bedwars.game.module.shop.shopitems.mining.ShopItemShears;
 import me.gravitinos.bedwars.game.module.shop.shopitems.misc.*;
 import me.gravitinos.bedwars.game.module.shop.shopitems.teamupgrade.ShopItemUpgradeHaste;
 import me.gravitinos.bedwars.game.module.shop.shopitems.teamupgrade.ShopItemUpgradeProtection;
@@ -10,12 +12,7 @@ import me.gravitinos.bedwars.game.module.shop.shopitems.teamupgrade.ShopItemUpgr
 import me.gravitinos.bedwars.game.module.shop.shopitems.weapons.ShopItemArrow;
 import me.gravitinos.bedwars.game.module.shop.shopitems.weapons.ShopItemBow;
 import me.gravitinos.bedwars.game.module.shop.shopitems.weapons.ShopItemSword;
-import me.gravitinos.bedwars.game.module.shop.shopitems.blocks.ShopItemEndstone;
-import me.gravitinos.bedwars.game.module.shop.shopitems.blocks.ShopItemObsidian;
-import me.gravitinos.bedwars.game.module.shop.shopitems.blocks.ShopItemSandstone;
-import me.gravitinos.bedwars.game.module.shop.shopitems.blocks.ShopItemWool;
 import me.gravitinos.bedwars.gamecore.gameitem.ModuleGameItems;
-import net.md_5.bungee.api.ServerPing;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -28,6 +25,7 @@ public enum EnumShopItem {
     BLOCK_SANDSTONE(new ShopItemSandstone()),
     BLOCK_ENDSTONE(new ShopItemEndstone()),
     BLOCK_OBSIDIAN(new ShopItemObsidian()),
+    BLOCK_LADDER(new ShopItemLadder()),
 
     ARMOUR_ADAPTABLE_PERMANENT(new ShopItemPermanentArmour()),
 
@@ -40,8 +38,14 @@ public enum EnumShopItem {
     MISC_INVIS_POT(new ShopItemInvisPot()),
     MISC_EXPLOSIVE_BOW(new ShopItemExplosiveBow()),
     MISC_TNT(new ShopItemTnt()),
+    MISC_KNOCKBACK_STICK(new ShopItemKBStick()),
+    MISC_WATER_BUCKET(new ShopItemWaterBucket()),
+    MISC_HEALING_POTION(new ShopItemHealthPotion()),
+    MISC_BRIDGE_EGG(new ShopItemBridgeEgg()),
+    MISC_DEFECTIVE_ENDERPEARL(new ShopItemDefectiveEnderpearl()),
 
     MINING_ADAPTABLE_PICKAXE(new ShopItemPickaxe()),
+    MINING_SHEARS(new ShopItemShears()),
 
     TEAM_UPGRADE_PROTECTION(new ShopItemUpgradeProtection()),
     TEAM_UPGRADE_SHARPNESS(new ShopItemUpgradeSharpness()),

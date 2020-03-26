@@ -3,7 +3,7 @@ package me.gravitinos.bedwars.game.command.admin;
 import me.gravitinos.bedwars.game.SpigotBedwars;
 import me.gravitinos.bedwars.game.command.GravCommandPermissionable;
 import me.gravitinos.bedwars.game.command.GravSubCommand;
-import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
+import me.gravitinos.bedwars.gamecore.module.GameStopReason;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;

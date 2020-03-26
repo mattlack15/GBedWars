@@ -55,12 +55,14 @@ public class PartyComm {
 
         CoreHandler.instance.getAsyncExecutor().execute(() -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
-                BungeeParty party = BungeePartyFactory.getPartyOf(p.getUniqueId());
-                if (party == null) {
-                    BungeePartyFactory.createNewParty(p.getUniqueId());
-                }
-                this.loaded.add(p.getUniqueId());
-                p.sendMessage(BungeePartyFactory.PREFIX + "Your party has been loaded!");
+                CoreHandler.instance.getAsyncExecutor().execute(() -> {
+                    BungeeParty party = BungeePartyFactory.getPartyOf(p.getUniqueId());
+                    if (party == null) {
+                        BungeePartyFactory.createNewParty(p.getUniqueId());
+                    }
+                    this.loaded.add(p.getUniqueId());
+                    p.sendMessage(BungeePartyFactory.PREFIX + "Your party has been loaded!");
+                });
             }
         });
     }

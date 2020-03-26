@@ -83,14 +83,14 @@ public class BungeePartyFactory {
         if(pid == null) {
             try {
                 if(askProxy) {
-                    BungeeParty party = PartyComm.instance.getPartyFromMember(player).get(2000, TimeUnit.MILLISECONDS);
+                    BungeeParty party = PartyComm.instance.getPartyFromMember(player).get(200, TimeUnit.MILLISECONDS);
                     if(!parties.contains(party) && party != null){
                         parties.add(party);
                     }
                     return party;
                 }
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                e.printStackTrace();
+               // e.printStackTrace();
             }
             return null;
         }
@@ -111,7 +111,7 @@ public class BungeePartyFactory {
             return null;
         }
         try {
-            BungeeParty party = PartyComm.instance.getParty(partyId).get(2000, TimeUnit.MILLISECONDS);
+            BungeeParty party = PartyComm.instance.getParty(partyId).get(200, TimeUnit.MILLISECONDS);
             if(party != null) parties.add(party);
             return party;
         } catch (InterruptedException | ExecutionException | TimeoutException e) {

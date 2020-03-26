@@ -1,7 +1,6 @@
-package me.gravitinos.bedwars.gamecore.handler;
+package me.gravitinos.bedwars.gamecore.module;
 
 import com.google.common.collect.Lists;
-import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
@@ -99,7 +98,23 @@ public abstract class GameHandler {
      * @param module The module to remove
      */
     public void removeModule(GameModule module) {
+        module.disable();
+        module.setGameHandler(null);
         this.modules.remove(module);
+    }
+
+    public void clearModules(){
+        this.disableAllModules();
+        this.modules.forEach(m -> m.setGameHandler(null));
+        this.modules.clear();
+    }
+
+    public void disableAllModules(){
+        this.modules.forEach(GameModule::disable);
+    }
+
+    public void enableAllModules(){
+        this.modules.forEach(GameModule::enable);
     }
 
     // Player Management

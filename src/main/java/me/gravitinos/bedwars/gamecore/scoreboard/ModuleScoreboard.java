@@ -2,7 +2,7 @@ package me.gravitinos.bedwars.gamecore.scoreboard;
 
 import com.google.common.collect.Lists;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import org.bukkit.Bukkit;
@@ -47,7 +47,7 @@ public class ModuleScoreboard extends GameModule {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!enabled) {
+                if (!isEnabled()) {
                     return;
                 }
                 for (UUID ids : players) {
@@ -180,16 +180,12 @@ public class ModuleScoreboard extends GameModule {
         return this.scoreboard;
     }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
-
     public SBScope getScope() {
         return scope;
     }
 
-    public void setEnabled(boolean enabled) {
-        if (!enabled) {
+    public void disable() {
+        super.disable();
             for (UUID ids : Lists.newArrayList(oldScoreboards.keySet())) {
                 Player p = Bukkit.getPlayer(ids);
                 if (p == null) {
@@ -199,8 +195,6 @@ public class ModuleScoreboard extends GameModule {
                 p.setScoreboard(oldScoreboards.get(ids));
                 oldScoreboards.remove(ids);
             }
-        }
-        this.enabled = enabled;
     }
 
     /**

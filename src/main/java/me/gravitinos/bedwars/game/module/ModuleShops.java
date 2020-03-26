@@ -2,12 +2,12 @@ package me.gravitinos.bedwars.game.module;
 
 import me.gravitinos.bedwars.game.BedwarsHandler;
 import me.gravitinos.bedwars.game.module.shop.Shop;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
+import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,15 +20,11 @@ public class ModuleShops extends GameModule {
     public ModuleShops(@NotNull GameHandler gameHandler, @NotNull ArrayList<Shop> shops) {
         super(gameHandler, "SHOPS");
         this.shops = shops;
-
-        Location mid = null;
-        if(((BedwarsHandler)gameHandler).getPointTracker().getMidGens().size() > 0){
-            mid = ((BedwarsHandler)gameHandler).getPointTracker().getMidGens().get(0);
-        }
-        Location finalMid = mid;
     }
 
-    public void setup(){
+    public void enable(){
+        super.enable();
+        Bukkit.broadcastMessage("Shops enabled");
         Location mid = null;
         if(((BedwarsHandler)getGameHandler()).getPointTracker().getMidGens().size() > 0){
             mid = ((BedwarsHandler)getGameHandler()).getPointTracker().getMidGens().get(0);
@@ -37,12 +33,14 @@ public class ModuleShops extends GameModule {
         this.shops.forEach(s -> s.createEntity(finalMid));
     }
 
-    public void cleanup(){
+    public void disable(){
+        super.disable();
         this.shops.forEach(Shop::removeEntity);
     }
 
     @EventSubscription
     private void onClick(PlayerInteractEntityEvent event){
+        Bukkit.broadcastMessage("Click");
         for(Shop shop : this.shops){
             if(event.getRightClicked().getUniqueId().equals(shop.getEntityUUID()) && shop.getEntityUUID() != null){
                 shop.open(event.getPlayer());

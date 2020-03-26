@@ -1,7 +1,7 @@
 package me.gravitinos.bedwars.gamecore.team;
 
 import com.google.common.collect.Lists;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import org.jetbrains.annotations.NotNull;

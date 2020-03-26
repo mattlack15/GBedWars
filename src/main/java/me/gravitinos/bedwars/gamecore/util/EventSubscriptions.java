@@ -1,5 +1,10 @@
 package me.gravitinos.bedwars.gamecore.util;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketListener;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.bukkit.BukkitUtil;
 import io.netty.channel.Channel;
@@ -7,46 +12,62 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
+import net.md_5.bungee.api.event.PlayerHandshakeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.*;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-public class EventSubscriptions extends TinyProtocol implements Listener {
+public class EventSubscriptions implements Listener {
 
     public static EventSubscriptions instance;
-    
-    public static final String HANDLER_NAME = "ES_PL_" + UUID.randomUUID().toString();
 
     private WeakList<Object> subscribedObjects = new WeakList<>();
     private WeakHashMap<Object, Class<?>> abstractObjects = new WeakHashMap<>();
 
+    private RegisteredListener registeredListener = new RegisteredListener(EventSubscriptions.this, (listener, event) -> callMethods(event), EventPriority.NORMAL, CoreHandler.main, false);
+
+
     public EventSubscriptions() {
-        super(CoreHandler.main);
         instance = this;
 
         //Register for all events
-
-        RegisteredListener registeredListener = new RegisteredListener(this, (listener, event) -> onEvent(event), EventPriority.NORMAL, CoreHandler.main, false);
-        for (HandlerList handler : HandlerList.getHandlerLists())
-            handler.register(registeredListener);
+        for(Class<?> clazz : ReflectionUtil.getClassesInPackage(Event.class.getPackage().getName(), Event.class.getClassLoader())){
+            if(Event.class.isAssignableFrom(clazz) && !Modifier.isAbstract(clazz.getModifiers())){
+                try {
+                    Method method = clazz.getDeclaredMethod("getHandlerList");
+                    HandlerList list = (HandlerList) method.invoke(null);
+                    list.register(registeredListener);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                } catch (NoSuchMethodException ignored){}
+            }
+        }
 
     }
 
-    public void callMethods(Object e) {
+    public synchronized void callMethods(Object e) {
+
+        if(e instanceof PluginDisableEvent){
+            if(((PluginDisableEvent) e).getPlugin().equals(CoreHandler.main)){
+                this.onDisable();
+            }
+        }
 
         //Normal objects
+        this.subscribedObjects.removeIf(Objects::isNull);
         for (Object o : this.subscribedObjects) {
             Class<?> c = o.getClass();
             ArrayList<Method> methodsToCheck = Lists.newArrayList(c.getDeclaredMethods());
@@ -60,19 +81,6 @@ public class EventSubscriptions extends TinyProtocol implements Listener {
                     if (methods.getParameterCount() > 0) {
                         Class<?> inType = methods.getParameterTypes()[0];
 
-                        if (e instanceof PacketEvent) {
-                            Type[] paramTypes = methods.getGenericParameterTypes();
-                            if (paramTypes.length < 1 || !(paramTypes[0] instanceof ParameterizedType)) {
-                                continue;
-                            }
-                            Type[] typeArgs = ((ParameterizedType) paramTypes[0]).getActualTypeArguments();
-                            if (typeArgs.length < 1) {
-                                continue;
-                            }
-                            if (!((Class<?>) typeArgs[0]).isAssignableFrom(((PacketEvent) e).getPacket().getClass())) {
-                                continue;
-                            }
-                        }
                         if (inType.isInstance(e) || inType.isAssignableFrom(e.getClass())) {
                             try {
                                 methods.setAccessible(true);
@@ -114,6 +122,10 @@ public class EventSubscriptions extends TinyProtocol implements Listener {
 
         }
 
+    }
+
+    public boolean isSubscribed(Object o){
+        return this.subscribedObjects.contains(o);
     }
 
     public void onDisable() {
@@ -243,25 +255,6 @@ public class EventSubscriptions extends TinyProtocol implements Listener {
 
     }
 
-    @Override
-    public Object onPacketInAsync(Player sender, Channel channel, Object packet) {
-        PacketEvent<?> event = new PacketEvent<>(packet, sender != null ? sender.getUniqueId() : null);
-        callMethods(event);
-        if(event.isCancelled()){
-            return null;
-        }
-        return packet;
-    }
-
-    @Override
-    public Object onPacketOutAsync(Player sender, Channel channel, Object packet) {
-        PacketEvent<?> event = new PacketEvent<>(packet, sender != null ? sender.getUniqueId() : null);
-        callMethods(event);
-        if(event.isCancelled()){
-            return null;
-        }
-        return packet;
-    }
 
     private void unInjectPlayerPacketListener(Player p) {
 //        Channel channel = ((CraftPlayer) p).getHandle().playerConnection.networkManager.channel;
@@ -272,8 +265,159 @@ public class EventSubscriptions extends TinyProtocol implements Listener {
 //        });
     }
 
-    @EventHandler
-    public void onEvent(Event e) {
-        callMethods(e);
-    }
+//    @EventHandler
+//    public void onInteract(PlayerInteractEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerEggThrowEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBucketEmptyEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerMoveEvent e) { callMethods(e); }
+//
+//    @EventHandler
+//    public void onInteract(PlayerJoinEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerItemConsumeEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerItemDamageEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerQuitEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerTeleportEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerLoginEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(AsyncPlayerPreLoginEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(AsyncPlayerChatEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerVelocityEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerInteractEntityEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerInteractAtEntityEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDeathEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerChatTabCompleteEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerHandshakeEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerGameModeChangeEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerItemMendEvent e) { callMethods(e); }
+//
+//    public void onInteract(org.bukkit.event.inventory.InventoryClickEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.inventory.InventoryCloseEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.inventory.InventoryOpenEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }
+//    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }    public void onInteract(PlayerBedEnterEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerDropItemEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(PlayerBedLeaveEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerEditBookEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemHeldEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerAnimationEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerRespawnEvent e) { callMethods(e); }
+//    @EventHandler
+//    public void onInteract(org.bukkit.event.player.PlayerItemBreakEvent e) { callMethods(e); }
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

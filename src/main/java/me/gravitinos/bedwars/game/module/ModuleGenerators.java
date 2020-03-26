@@ -6,7 +6,7 @@ import me.gravitinos.bedwars.game.module.generator.Generator;
 import me.gravitinos.bedwars.game.module.generator.GeneratorDrop;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
 import me.gravitinos.bedwars.gamecore.module.GameModule;
 import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.HoloTextBox;
@@ -28,7 +28,7 @@ public class ModuleGenerators extends GameModule {
     private static final double MID_GENERATOR_INTERVAL = 45;
     private static final double OUTER_GENERATOR_INTERVAL = 30;
     private static final double BASE_GENERATOR_IRON_INTERVAL = 3;
-    private static final double BASE_GENERATOR_GOLD_INTERVAL = 15;
+    private static final double BASE_GENERATOR_GOLD_INTERVAL = 12;
 
     private boolean enabled = false;
 
@@ -55,57 +55,57 @@ public class ModuleGenerators extends GameModule {
                     .addDrop(Objects.requireNonNull(a(BedwarsItem.RESOURCE_GOLD.toString())), BASE_GENERATOR_GOLD_INTERVAL)); //Drop 2 (Gold)
 
         }
-
-        //Task interval of 1 tick or 0.05s
-        new BukkitRunnable() {
-            int i = 0;
-            @Override
-            public void run() {
-                if (!enabled) {
-                    return;
-                }
-                if(++i == 12){
-                    i = 0;
-                }
-                for (Generator generator : generators) {
-
-                    if(i == 0){
-                        if(generator.getName().equals(ChatColor.GRAY + "Base Generator")){
-                            Location loc = generator.getLocation().clone().add(0.5, 0.2, 0.5);
-                            loc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, loc,2);
-                        } else {
-                            generator.spawnParticles();
-                        }
-                    }
-
-                    HoloTextBox box = generator.getHoloTextBox();
-                    //Decrement countdown
-                    for (GeneratorDrop drops : generator.getDrops()) {
-                        drops.countdown -= 0.05d;
-
-
-                        //Check if it is time to drop an item
-                        if (drops.countdown <= 0) {
-                            drops.countdown = drops.getInterval(); //Reset countdown
-                            generator.dropItem(generator.getDrops().indexOf(drops), 1); //Drop one
-                        }
-                        box.setLine(generator.getDrops().indexOf(drops), (generator.getDrops().size() > 1 ? new ItemBuilder(drops.getDrop()).getName() + " " : "") + ChatColor.YELLOW + Math.round(drops.countdown) + "s");
-                    }
-
-                    ArmorStand item = generator.getItem();
-                    if (item != null) {
-                        EulerAngle headPose = item.getHeadPose();
-                        if (headPose.getY() <= 0) {
-                            headPose = new EulerAngle(0, Math.toRadians(360), 0);
-                        }
-                        headPose = new EulerAngle(0, headPose.getY() - Math.toRadians(5), 0);
-                        item.setHeadPose(headPose);
-                    }
-
-                }
-            }
-        }.runTaskTimer(CoreHandler.main, 0, 1);
     }
+
+    private BukkitRunnable runnable = //Task interval of 1 tick or 0.05s
+            new BukkitRunnable() {
+                int i = 0;
+                @Override
+                public void run() {
+                    if (!enabled) {
+                        return;
+                    }
+                    if(++i == 12){
+                        i = 0;
+                    }
+                    for (Generator generator : generators) {
+
+                        if(i == 0){
+                            if(generator.getName().equals(ChatColor.GRAY + "Base Generator")){
+                                Location loc = generator.getLocation().clone().add(0.5, 0.2, 0.5);
+                                loc.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, loc,2);
+                            } else {
+                                generator.spawnParticles();
+                            }
+                        }
+
+                        HoloTextBox box = generator.getHoloTextBox();
+                        //Decrement countdown
+                        for (GeneratorDrop drops : generator.getDrops()) {
+                            drops.countdown -= 0.05d;
+
+
+                            //Check if it is time to drop an item
+                            if (drops.countdown <= 0) {
+                                drops.countdown = drops.getInterval(); //Reset countdown
+                                generator.dropItem(generator.getDrops().indexOf(drops), 1); //Drop one
+                            }
+                            box.setLine(generator.getDrops().indexOf(drops), (generator.getDrops().size() > 1 ? new ItemBuilder(drops.getDrop()).getName() + " " : "") + ChatColor.YELLOW + Math.round(drops.countdown) + "s");
+                        }
+
+                        ArmorStand item = generator.getItem();
+                        if (item != null) {
+                            EulerAngle headPose = item.getHeadPose();
+                            if (headPose.getY() <= 0) {
+                                headPose = new EulerAngle(0, Math.toRadians(360), 0);
+                            }
+                            headPose = new EulerAngle(0, headPose.getY() - Math.toRadians(5), 0);
+                            item.setHeadPose(headPose);
+                        }
+
+                    }
+                }
+            };
 
     private ItemStack a(String item) {
         GameItemHandler gameItemHandler = ((BedwarsHandler) this.getGameHandler()).getGameItemsModule().getGameItem(item);
@@ -131,14 +131,15 @@ public class ModuleGenerators extends GameModule {
     }
 
     public void enable() {
+        super.enable();
         this.enabled = true;
+        runnable.runTaskTimer(CoreHandler.main, 0, 1);
     }
 
     public void disable() {
+        super.disable();
         this.enabled = false;
-    }
-
-    public void cleanup() {
+        runnable.cancel();
         generators.forEach(gen -> {
             gen.getHoloTextBox().clear();
             gen.removeItem();

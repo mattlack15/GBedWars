@@ -1,5 +1,6 @@
 package me.gravitinos.bedwars.gamecore.gameitem;
 
+import me.gravitinos.bedwars.gamecore.util.EventSubscription;
 import me.gravitinos.bedwars.gamecore.util.EventSubscriptions;
 import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
@@ -11,6 +12,7 @@ import java.util.List;
 public abstract class GameItemHandler {
     private ModuleGameItems module;
     private String name;
+    private boolean enabled = true;
 
     public GameItemHandler(@NotNull ModuleGameItems module, @NotNull String name){
         this.module = module;
@@ -26,9 +28,17 @@ public abstract class GameItemHandler {
         return this.module;
     }
 
-    protected abstract void enable();
-    protected abstract void disable();
-    public abstract boolean isEnabled();
+    protected void enable(){
+        this.enabled = true;
+        EventSubscriptions.instance.subscribe(this);
+    }
+    protected void disable(){
+        this.enabled = false;
+        EventSubscriptions.instance.unSubscribe(this);
+    }
+    public boolean isEnabled(){
+        return this.enabled;
+    }
     public abstract String getDescription();
     public String getName(){
         return this.name;

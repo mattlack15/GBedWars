@@ -15,8 +15,8 @@ import me.gravitinos.bedwars.game.module.shop.Shop;
 import me.gravitinos.bedwars.gamecore.CoreHandler;
 import me.gravitinos.bedwars.gamecore.gameitem.GameItemHandler;
 import me.gravitinos.bedwars.gamecore.gameitem.ModuleGameItems;
-import me.gravitinos.bedwars.gamecore.handler.GameHandler;
-import me.gravitinos.bedwars.gamecore.handler.GameStopReason;
+import me.gravitinos.bedwars.gamecore.module.GameHandler;
+import me.gravitinos.bedwars.gamecore.module.GameStopReason;
 import me.gravitinos.bedwars.gamecore.map.ModuleBorder;
 import me.gravitinos.bedwars.gamecore.party.BaseParty;
 import me.gravitinos.bedwars.gamecore.scoreboard.ModuleScoreboard;
@@ -61,9 +61,26 @@ public class BedwarsHandler extends GameHandler {
 
     private CuboidRegion mapRegion;
 
+    private File map;
+
     public BedwarsHandler(File map) {
         super("Bedwars", 3600);
+        this.map = map;
+    }
+
+    /**
+     * ! This function will not work if the game is running
+     * @param map The map file
+     */
+    public void setMap(File map){
+        if(this.isRunning()) return;
+        this.map = map;
+    }
+
+    private boolean setupModules(File map){
         try {
+            this.clearModules();
+
             new BedwarsMapDataHandler(map);
             this.pointTracker = new BedwarsMapPointTracker(BedwarsMapDataHandler.instance);
 
@@ -85,12 +102,17 @@ public class BedwarsHandler extends GameHandler {
             gameItems.addGameItemHandler(new ItemInvisPot(gameItems));
             gameItems.addGameItemHandler(new ItemExplosiveBow(gameItems));
             gameItems.addGameItemHandler(new ItemTnt(gameItems));
+            gameItems.addGameItemHandler(new ItemBridgeEgg(gameItems));
+            gameItems.addGameItemHandler(new ItemDefectiveEnderpearl(gameItems));
+
 
 
             this.addModule(new ModuleTeamManager(this));
             this.addModule(new ModuleScoreboard(this, ChatColor.RED + "Soraxus BedWars", SBScope.EVERYONE));
             this.addModule(new ModuleDamageHandler(this));
             this.addModule(new ModuleTeamUpgrades(this));
+            this.addModule(new ModuleCoolDeaths(this));
+            this.addModule(new ModulePvp(this));
 
             //--- Scoreboard Setup ---
             this.getModule(ModuleScoreboard.class).addElement(new SBElement(""));
@@ -191,7 +213,9 @@ public class BedwarsHandler extends GameHandler {
         } catch (Exception e) {
             e.printStackTrace();
             this.stop("Game Error", GameStopReason.GAME_ERROR);
+            return false;
         }
+        return true;
     }
 
     public BWTeamInfo getTeamInfo(BedwarsTeam team) {
@@ -241,6 +265,10 @@ public class BedwarsHandler extends GameHandler {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         CoreHandler.doInMainThread(() -> {
 
+            if(!this.setupModules(map)){
+                return;
+            }
+
             this.running = true;
 
             //Startup
@@ -253,11 +281,10 @@ public class BedwarsHandler extends GameHandler {
                     teamInfo.add(new BWTeamInfo(this, teams));
                 }
 
-                this.getModule(ModuleGenerators.class).enable();
                 this.getModule(ModuleGenerators.class).setup();
-                this.getModule(ModuleScoreboard.class).setEnabled(true);
-                this.getModule(ModuleShops.class).setup();
                 this.getGameItemsModule().enableAllGameItems();
+
+                this.enableAllModules();
 
                 this.getTeamManagerModule().clear();
                 ArrayList<String> teams = new ArrayList<>();
@@ -303,11 +330,7 @@ public class BedwarsHandler extends GameHandler {
             sendServerMessage("Game ended, " + ChatColor.translateAlternateColorCodes('&', stopMessage), "Game");
         }
 
-        this.getModule(ModuleGenerators.class).cleanup();
-        this.getModule(ModuleGenerators.class).disable();
         this.getGameItemsModule().disableAllGameItems();
-        this.getModule(ModuleScoreboard.class).setEnabled(false);
-        this.getModule(ModuleShops.class).cleanup();
         this.getModule(ModuleGameEnvironment.class).revertBlocks();
 
         this.internalEntityCleanup();
@@ -320,19 +343,38 @@ public class BedwarsHandler extends GameHandler {
             this.kickSpectator(spectators);
         }
 
+        this.disableAllModules();
+
         return null;
     }
 
+    /**
+     * Kill a player
+     * @param player The player to kill
+     * @param deathType The type of death
+     * @param killedBy Who/What the player was killed by
+     */
     public void killPlayer(@NotNull UUID player, @NotNull DeathType deathType, @NotNull String killedBy) {
         this.killPlayer(player, deathType, killedBy, null);
     }
 
+    /**
+     * Kill a player
+     * @param player The player to kill
+     * @param deathType The type of death
+     * @param killedBy Who/What the player was killed by
+     * @param giveItemsTo If anyone, who to give the player's items to (may be null)
+     */
     public void killPlayer(@NotNull UUID player, @NotNull DeathType deathType, @NotNull String killedBy, Player giveItemsTo) {
         Player p = Bukkit.getPlayer(player);
 
         killedBy = ChatColor.translateAlternateColorCodes('&', killedBy);
 
         BedwarsTeam team = BedwarsTeam.getTeam(getTeamManagerModule().getTeam(player));
+
+        if (!this.getPlayerInfo(player).isRespawning()) {
+            this.getModule(ModuleCoolDeaths.class).bloodDeath(p);
+        }
 
         this.getModule(ModulePlayerSetup.class).killPlayer(p, this.getTeamInfo(team).isBedDestroyed(), giveItemsTo);
         this.getModule(ModuleGameItems.class).getGameItem(ItemInvisPot.class).removeInvisible(p);

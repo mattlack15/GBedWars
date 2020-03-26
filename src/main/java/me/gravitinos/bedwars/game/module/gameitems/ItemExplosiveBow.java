@@ -45,7 +45,7 @@ public class ItemExplosiveBow extends SimpleGameItemHandler {
 
     @Override
     public ItemStack getItem(int level) {
-        ItemBuilder builder = new ItemBuilder(Material.BOW, 1).setName(ChatColor.DARK_RED + "Explosive Bow");
+        ItemBuilder builder = new ItemBuilder(Material.BOW, 1).setName(ChatColor.DARK_RED + "Bazooka");
         for(String lines :  TextUtil.splitIntoLines(this.getDescription(), 25)){
             builder.addLore(ChatColor.GRAY + ChatColor.translateAlternateColorCodes('&', lines));
         }

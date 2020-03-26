@@ -70,10 +70,21 @@ public class ItemBuilder {
 	private ItemStack item;
 
 	public ItemBuilder(PotionType type, boolean extended, boolean upgraded){
-		this.item = new ItemStack(Material.POTION, 1);
-		PotionMeta meta = (PotionMeta) this.item.getItemMeta();
-		meta.setBasePotionData(new PotionData(type, extended, upgraded));
-		this.item.setItemMeta(meta);
+		this(type, extended, upgraded, false);
+	}
+
+	public ItemBuilder(PotionType type, boolean extended, boolean upgraded, boolean splash){
+		if(splash) {
+			this.item = new ItemStack(Material.SPLASH_POTION, 1);
+			PotionMeta meta = (PotionMeta) this.item.getItemMeta();
+			meta.setBasePotionData(new PotionData(type, extended, upgraded));
+			this.item.setItemMeta(meta);
+		} else {
+			this.item = new ItemStack(Material.POTION, 1);
+			PotionMeta meta = (PotionMeta) this.item.getItemMeta();
+			meta.setBasePotionData(new PotionData(type, extended, upgraded));
+			this.item.setItemMeta(meta);
+		}
 	}
 
 	public ItemBuilder(Material m, int amount) {
