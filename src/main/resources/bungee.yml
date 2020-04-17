@@ -1,6 +1,6 @@
-main: me.gravitinos.bedwars.bungee.BungeeProxyParties
-name: SoraxusBedwars-Proxy
+main: me.gravitinos.minigame.bedwars.bungee.BungeeProxyParties
+name: SoraxusMinigames-Proxy
 version: 1.0
 author: Gravitinos
-description: Bungee Parties/Bedwars Manager
+description: Bungee Parties/Minigame Manager
 commands:

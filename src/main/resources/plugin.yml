@@ -1,4 +1,4 @@
-main: me.gravitinos.bedwars.game.SpigotBedwars
+main: me.gravitinos.minigame.SpigotMinigames
 name: SoraxusBedwars
 version: 1.0
 author: Gravitinos

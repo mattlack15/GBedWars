@@ -1,0 +1,17 @@
+package me.gravitinos.minigame.bedwars.game.module.gameitems;
+
+public enum BedwarsItem {
+    RESOURCE_IRON,
+    RESOURCE_DIAMOND,
+    RESOURCE_GOLD,
+    RESOURCE_EMERALD,
+    ITEM_ENDERPEARL,
+    ITEM_SPACE_ENDERPEARL,
+    ITEM_INVIS_POT,
+    ITEM_TNT,
+    ITEM_EXPLOSIVE_BOW,
+    ITEM_BRIDGE_EGG,
+    ITEM_DEFECTIVE_ENDERPEARL,
+    ITEM_SECOND_CHANCE,
+    ITEM_RETURN_TO_SENDER;
+}
